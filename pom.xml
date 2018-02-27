@@ -1,0 +1,296 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <groupId>com.xiaomi.miui.ad</groupId>
+    <artifactId>MarchingGiant</artifactId>
+    <version>1.0-SNAPSHOT</version>
+
+    <dependencies>
+        <dependency>
+            <groupId>com.github.scopt</groupId>
+            <artifactId>scopt_2.11</artifactId>
+            <version>3.4.0</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.apache.spark</groupId>
+            <artifactId>spark-core_2.11</artifactId>
+            <scope>provided</scope>
+            <version>2.1.0</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.apache.spark</groupId>
+            <artifactId>spark-sql_2.11</artifactId>
+            <scope>provided</scope>
+            <version>2.1.0</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.apache.spark</groupId>
+            <artifactId>spark-mllib_2.11</artifactId>
+            <scope>provided</scope>
+            <version>2.1.0</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.xiaomi.matrix</groupId>
+            <artifactId>cat-google_2.11</artifactId>
+            <version>0.0.2-SNAPSHOT</version>
+            <exclusions>
+                <exclusion>
+                    <artifactId>breeze-natives_2.11</artifactId>
+                    <groupId>org.scalanlp</groupId>
+                </exclusion>
+                <exclusion>
+                    <artifactId>breeze-viz_2.11</artifactId>
+                    <groupId>org.scalanlp</groupId>
+                </exclusion>
+                <exclusion>
+                    <artifactId>ansj_seg</artifactId>
+                    <groupId>org.ansj</groupId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>com.xiaomi.matrix</groupId>
+            <artifactId>cat-emi_2.11</artifactId>
+            <version>0.0.2-SNAPSHOT</version>
+            <exclusions>
+                <exclusion>
+                    <artifactId>libthrift</artifactId>
+                    <groupId>org.apache.thrift</groupId>
+                </exclusion>
+                <exclusion>
+                    <artifactId>hanlp</artifactId>
+                    <groupId>com.hankcs</groupId>
+                </exclusion>
+                <exclusion>
+                    <artifactId>matrix-seg_2.11</artifactId>
+                    <groupId>com.xiaomi.matrix</groupId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+
+        <dependency>
+            <groupId>com.xiaomi.matrix</groupId>
+            <artifactId>topic-core_2.11</artifactId>
+            <version>0.0.9-SNAPSHOT</version>
+            <exclusions>
+                <exclusion>
+                    <artifactId>ansj_seg</artifactId>
+                    <groupId>org.ansj</groupId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+
+        <!--<dependency>-->
+            <!--<groupId>com.xiaomi.ad.matrix</groupId>-->
+            <!--<artifactId>query-understanding</artifactId>-->
+            <!--<version>1.0-SNAPSHOT</version>-->
+            <!--<exclusions>-->
+                <!--<exclusion>-->
+                    <!--<artifactId>xml-apis</artifactId>-->
+                    <!--<groupId>xml-apis</groupId>-->
+                <!--</exclusion>-->
+            <!--</exclusions>-->
+        <!--</dependency>-->
+
+        <dependency>
+            <groupId>org.scalanlp</groupId>
+            <artifactId>breeze_2.11</artifactId>
+            <version>0.13.1</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.json4s</groupId>
+            <artifactId>json4s-native_2.11</artifactId>
+            <version>3.2.11</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.json4s</groupId>
+            <artifactId>json4s-jackson_2.11</artifactId>
+            <version>3.2.11</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.xiaomi.data</groupId>
+            <artifactId>data-platform-spec</artifactId>
+            <version>1.2.4</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.xiaomi.data</groupId>
+            <artifactId>commons-spark</artifactId>
+            <version>0.16.6.2</version>
+            <exclusions>
+                <exclusion>
+                    <artifactId>libthrift</artifactId>
+                    <groupId>org.apache.thrift</groupId>
+                </exclusion>
+                <exclusion>
+                    <artifactId>json4s-jackson_2.10</artifactId>
+                    <groupId>org.json4s</groupId>
+                </exclusion>
+                <exclusion>
+                    <artifactId>json4s-ast_2.10</artifactId>
+                    <groupId>org.json4s</groupId>
+                </exclusion>
+                <exclusion>
+                    <artifactId>json4s-core_2.10</artifactId>
+                    <groupId>org.json4s</groupId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+
+        <dependency>
+            <groupId>com.twitter</groupId>
+            <artifactId>scalding-args_2.11</artifactId>
+            <version>0.17.2</version>
+        </dependency>
+
+        <dependency>
+            <groupId>net.ruippeixotog</groupId>
+            <artifactId>scala-scraper_2.11</artifactId>
+            <version>2.0.0-RC2</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.xiaomi.ad.matrix</groupId>
+            <artifactId>qu-detecting-commercial-intention</artifactId>
+            <version>1.0-SNAPSHOT</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.ansj</groupId>
+            <artifactId>matrix-ansj</artifactId>
+            <version>5.1.5-SNAPSHOT</version>
+        </dependency>
+
+        <!--<dependency>-->
+            <!--<groupId>com.xiaomi</groupId>-->
+            <!--<artifactId>matrix-nlp</artifactId>-->
+            <!--<version>1.0-SNAPSHOT</version>-->
+        <!--</dependency>-->
+    </dependencies>
+
+    <build>
+        <resources>
+            <resource>
+                <directory>
+                    ${project.basedir}/src/main/resources
+                </directory>
+                <filtering>true</filtering>
+            </resource>
+        </resources>
+
+        <testResources>
+            <testResource>
+                <directory>${project.basedir}/src/test/resources</directory>
+                <filtering>false</filtering>
+            </testResource>
+        </testResources>
+
+        <plugins>
+            <plugin>
+                <groupId>org.scala-tools</groupId>
+                <artifactId>maven-scala-plugin</artifactId>
+                <version>2.15.2</version>
+                <executions>
+                    <execution>
+                        <id>scala-compile-first</id>
+                        <phase>process-resources</phase>
+                        <goals>
+                            <goal>compile</goal>
+                        </goals>
+                    </execution>
+                    <execution>
+                        <id>scala-test-compile</id>
+                        <phase>process-test-resources</phase>
+                        <goals>
+                            <goal>testCompile</goal>
+                        </goals>
+                    </execution>
+                </executions>
+                <configuration>
+                    <scalaVersion>2.11.8</scalaVersion>
+                </configuration>
+            </plugin>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-enforcer-plugin</artifactId>
+                <version>1.4.1</version>
+                <executions>
+                    <execution>
+                        <id>enforce-banned-dependencies</id>
+                        <goals>
+                            <goal>enforce</goal>
+                        </goals>
+                        <configuration>
+                            <rules>
+                                <bannedDependencies>
+                                    <searchTransitive>true</searchTransitive>
+                                    <excludes>
+                                        <exclude>org.apache.thrift:libthrift</exclude>
+                                        <exclude>org.apache.thrift:thrift</exclude>
+                                        <exclude>thrift:libthrift</exclude>
+                                        <exclude>thrift:libthrift-fix-leak</exclude>
+                                    </excludes>
+                                    <includes>
+                                        <include>org.apache.thrift:thrift:[0.5.0-fix-thrift2402]</include>
+                                        <include>org.apache.thrift:libthrift:[0.5.0]</include>
+                                    </includes>
+                                </bannedDependencies>
+                            </rules>
+                            <fail>true</fail>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-shade-plugin</artifactId>
+                <version>2.4</version>
+                <executions>
+                    <execution>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>shade</goal>
+                        </goals>
+                        <configuration>
+                            <transformers>
+                                <transformer implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer"/>
+                            </transformers>
+                            <outputFile>${project.basedir}/target/${artifactId}-${version}-jar-with-dependencies.jar</outputFile>
+                            <filters>
+                                <filter>
+                                    <artifact>*:*</artifact>
+                                    <excludes>
+                                        <exclude>META-INF/*.SF</exclude>
+                                        <exclude>META-INF/*.DSA</exclude>
+                                        <exclude>META-INF/*.RSA</exclude>
+                                    </excludes>
+                                </filter>
+                            </filters>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <configuration>
+                    <source>1.7</source>
+                    <target>1.7</target>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
+</project>
