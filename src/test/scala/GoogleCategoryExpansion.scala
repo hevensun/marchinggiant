@@ -30,6 +30,7 @@ object GoogleCategoryExpansion {
                     .filter(_.nonEmpty)
                 id -> ids
             }
+            .filter(_._2.nonEmpty)
             .foreach { case(id, ids) =>
                 val line = s"$id\t${Try(ids.mkString(" ")).getOrElse("")}\n"
                 bw.write(line)

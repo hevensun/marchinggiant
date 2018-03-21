@@ -60,7 +60,36 @@ public class ACTrie implements Serializable {
         return collectedEmits;
     }
 
+    public Collection<String> parseTextAndMerge(String text) {
+        Collection<Emit> parsed = parseText(text);
+        List<String> ans = new ArrayList<>();
+        if (parsed.isEmpty()) {
+            return ans;
+        }
+        Emit last = null;
+        List<Emit> parsedList = new ArrayList<>(parsed);
+        for (int i = parsedList.size() - 1; i >= 0; i--) {
+            Emit cur = parsedList.get(i);
+            if (last == null) {
+                last = cur;
+            } else {
+                if (last.getStart() <= cur.getStart() && last.getEnd() >= cur.getEnd()) {
+                    continue;
+                } else if (cur.getStart() <= last.getStart() && cur.getEnd() >= last.getEnd()) {
+                    last = cur;
+                } else {
+                    ans.add(last.getKeyword());
+                    last = cur;
+                }
+            }
+        }
+        if (last != null) {
+            ans.add(last.getKeyword());
+        }
 
+        Collections.reverse(ans);
+        return ans;
+    }
 
     /**
      * 检查是否建立了failure表
@@ -108,11 +137,26 @@ public class ACTrie implements Serializable {
 
     public static void main(String[] args) {
         ACTrie trie = new ACTrie();
-        trie.addKeyword("小米公司");
-        trie.addKeyword("大奖");
-        Collection<Emit> emits = trie.parseText("小米公司获得某某大奖");
+        trie.addKeyword("ip");
+        trie.addKeyword("ph");
+        trie.addKeyword("ho");
+        trie.addKeyword("iphon");
+        trie.addKeyword("hon");
+        trie.addKeyword("on");
+        trie.addKeyword("iphone");
+        trie.addKeyword("phone");
+        trie.addKeyword("one");
+        trie.addKeyword("ne");
+        trie.addKeyword("iphone4");
+        trie.addKeyword("e4");
+        Collection<Emit> emits = trie.parseText("iphone4");
         for (Emit emit : emits) {
             System.out.println(emit.getStart() + " " + emit.getEnd() + "\t" + emit.getKeyword());
+        }
+
+        Collection<String> ans = trie.parseTextAndMerge("iphone4");
+        for (String cur : ans) {
+            System.out.println(cur);
         }
     }
 }

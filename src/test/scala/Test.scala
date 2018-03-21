@@ -13,6 +13,18 @@ import scala.util.Random
   */
 object Test {
     def main(args: Array[String]): Unit = {
+        val bw = new BufferedWriter(new FileWriter(new File("/home/mi/Desktop/cailiming.txt")))
+
+        (0 to 100000)
+            .foreach { i =>
+                bw.write("吃饭了吗\n")
+            }
+
+        bw.flush()
+        bw.close()
+    }
+
+    def main12(args: Array[String]): Unit = {
         val file = new File("/home/mi/Desktop/tmp2/sample_submission.csv")
         file.createNewFile()
         val bw = new BufferedWriter(new FileWriter(file))

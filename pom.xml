@@ -163,12 +163,18 @@
             <groupId>com.xiaomi.ad.matrix</groupId>
             <artifactId>qu-detecting-commercial-intention</artifactId>
             <version>1.0-SNAPSHOT</version>
+            <exclusions>
+                <exclusion>
+                    <artifactId>ansj_seg</artifactId>
+                    <groupId>org.ansj</groupId>
+                </exclusion>
+            </exclusions>
         </dependency>
 
         <dependency>
             <groupId>org.ansj</groupId>
             <artifactId>matrix-ansj</artifactId>
-            <version>5.1.5-SNAPSHOT</version>
+            <version>5.1.5-alpha-SNAPSHOT</version>
         </dependency>
 
         <!--<dependency>-->
