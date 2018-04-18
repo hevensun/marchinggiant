@@ -16,10 +16,10 @@ object appCategory {
     case class userResult(
                              imei1Md5: String, gCatSeq: Seq[help],  topicSeq: Seq[help], emiCatSeq: Seq[help], kwSeq:Seq[help]
                          )
-    case class adResult(appId:String, gCatSeq:Seq[help], emiCatSeq:Seq[help], topicSeq:Seq[help])
-    
     case class Category(catId: Int, catName: String, score: Double)
+    case class googleCategory(name: String, score: Double)
     case class EmiCategory(name: String, score: Double)
+    case class adResult(appId:String, gCatSeq:Seq[googleCategory], emiCatSeq:Seq[help], topicSeq:Seq[help])
     case class LDATopic(topicId: Int, topicName: String, score: Double)
     case class Term(appId: Long, keywords: Seq[String], category:Seq[Category], emiCategory: Seq[EmiCategory], lda:Seq[LDATopic])
     
@@ -75,11 +75,21 @@ object appCategory {
                     val value = g.score
                     val extend = key +: cateExtendB.value.getOrElse(key, Seq())
                     val ss = extend.map{ mm =>
-                        help(mm, value)
+//                        help(mm, value)
+                      mm -> value
                     }
                     ss
 //                    help(g.catId.toString, g.score)
-                }
+                }.filter(f=> f._1 != "0")
+                .groupBy(_._1)
+                .map{m =>
+                  val cate = m._1
+                  val size = m._2.size
+                  val score = m._2.map{mm=>
+                    mm._2
+                  }.sum
+                  googleCategory(cate, score / size)
+                }.toSeq
                 val emi = m.emiCategory.map { e =>
                     help(e.name, e.score)
                 }
