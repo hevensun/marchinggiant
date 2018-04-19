@@ -64,20 +64,21 @@ object testJoin {
                     val appGooList = app._2(0).map{ mm =>
                         mm.split("\t")(0)
                     }.toSet
-                    val interSet = appGooList.intersect(userGooList)
+//                    val interSet = appGooList.intersect(userGooList)
+                    val unionSet = appGooList.union(userGooList)
                     val adCate = app._2(0).map{ add =>
                         add.split("\t")(0) -> add.split("\t")(1).toDouble
                     }.toMap
                 
-                    val sum1 = interSet.map{ in =>
+                    val sum1 = unionSet.map{ in =>
                         adCate.getOrElse(in, 0.0) * google.getOrElse(in, 0.0)
                     }.sum
                 
-                    val sum2 = interSet.map{ in =>
+                    val sum2 = unionSet.map{ in =>
                         adCate.getOrElse(in, 0.0) * adCate.getOrElse(in, 0.0)
                     }.sum
                 
-                    val sum3 = interSet.map{ in =>
+                    val sum3 = unionSet.map{ in =>
                         google.getOrElse(in, 0.0) * google.getOrElse(in, 0.0)
                     }.sum
                     cosResult1(appId, sum1 / (sqrt(sum2) * sqrt(sum3)))
@@ -95,20 +96,21 @@ object testJoin {
                     val appEmiList = app._2(1).map{ mm =>
                         mm.split("\t")(0)
                     }.toSet
-                    val interSet = appEmiList.intersect(userEmiList)
+//                    val interSet = appEmiList.intersect(userEmiList)
+                    val unionSetemei = appEmiList.union(userEmiList)
                     val adCate = app._2(1).map{ add =>
                         add.split("\t")(0) -> add.split("\t")(1).toDouble
                     }.toMap
         
-                    val sum1 = interSet.map{ in =>
+                    val sum1 = unionSetemei.map{ in =>
                         adCate.getOrElse(in, 0.0) * emi.getOrElse(in, 0.0)
                     }.sum
         
-                    val sum2 = interSet.map{ in =>
+                    val sum2 = unionSetemei.map{ in =>
                         adCate.getOrElse(in, 0.0) * adCate.getOrElse(in, 0.0)
                     }.sum
         
-                    val sum3 = interSet.map{ in =>
+                    val sum3 = unionSetemei.map{ in =>
                         emi.getOrElse(in, 0.0) * emi.getOrElse(in, 0.0)
                     }.sum
                     cosResult1(appId, sum1 / (sqrt(sum2) * sqrt(sum3)))
@@ -126,20 +128,21 @@ object testJoin {
                     val appLdaList = app._2(2).map{ mm =>
                         mm.split("\t")(0)
                     }.toSet
-                    val interSet = appLdaList.intersect(userLdaList)
+//                    val interSet = appLdaList.intersect(userLdaList)
+                    val unionSetLda = appLdaList.union(userLdaList)
                     val adCate = app._2(2).map{ add =>
                         add.split("\t")(0) -> add.split("\t")(1).toDouble
                     }.toMap
         
-                    val sum1 = interSet.map{ in =>
+                    val sum1 = unionSetLda.map{ in =>
                         adCate.getOrElse(in, 0.0) * lda.getOrElse(in, 0.0)
                     }.sum
         
-                    val sum2 = interSet.map{ in =>
+                    val sum2 = unionSetLda.map{ in =>
                         adCate.getOrElse(in, 0.0) * adCate.getOrElse(in, 0.0)
                     }.sum
         
-                    val sum3 = interSet.map{ in =>
+                    val sum3 = unionSetLda.map{ in =>
                         lda.getOrElse(in, 0.0) * lda.getOrElse(in, 0.0)
                     }.sum
                     cosResult1(appId, sum1 / (sqrt(sum2) * sqrt(sum3)))
