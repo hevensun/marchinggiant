@@ -88,15 +88,15 @@
         </dependency>
 
         <!--<dependency>-->
-            <!--<groupId>com.xiaomi.ad.matrix</groupId>-->
-            <!--<artifactId>query-understanding</artifactId>-->
-            <!--<version>1.0-SNAPSHOT</version>-->
-            <!--<exclusions>-->
-                <!--<exclusion>-->
-                    <!--<artifactId>xml-apis</artifactId>-->
-                    <!--<groupId>xml-apis</groupId>-->
-                <!--</exclusion>-->
-            <!--</exclusions>-->
+        <!--<groupId>com.xiaomi.ad.matrix</groupId>-->
+        <!--<artifactId>query-understanding</artifactId>-->
+        <!--<version>1.0-SNAPSHOT</version>-->
+        <!--<exclusions>-->
+        <!--<exclusion>-->
+        <!--<artifactId>xml-apis</artifactId>-->
+        <!--<groupId>xml-apis</groupId>-->
+        <!--</exclusion>-->
+        <!--</exclusions>-->
         <!--</dependency>-->
 
         <dependency>
@@ -177,10 +177,16 @@
             <version>5.1.5-alpha-SNAPSHOT</version>
         </dependency>
 
+        <dependency>
+            <groupId>com.xiaomi.ad.matrix</groupId>
+            <artifactId>qu-query-term-weight</artifactId>
+            <version>1.0-SNAPSHOT</version>
+        </dependency>
+
         <!--<dependency>-->
-            <!--<groupId>com.xiaomi</groupId>-->
-            <!--<artifactId>matrix-nlp</artifactId>-->
-            <!--<version>1.0-SNAPSHOT</version>-->
+        <!--<groupId>com.xiaomi</groupId>-->
+        <!--<artifactId>matrix-nlp</artifactId>-->
+        <!--<version>1.0-SNAPSHOT</version>-->
         <!--</dependency>-->
     </dependencies>
 
