@@ -190,7 +190,8 @@ object userCategory {
                 Result(imei, google, topic, emi, kwq)
             }
         
-        tt.repartition(200)
+        tt.filter(r => r.gCatSeq.nonEmpty || r.emiCatSeq.nonEmpty || r.topicSeq.nonEmpty)
+            .repartition(100)
             .write
             .mode(SaveMode.Overwrite)
             .parquet(args("output"))
