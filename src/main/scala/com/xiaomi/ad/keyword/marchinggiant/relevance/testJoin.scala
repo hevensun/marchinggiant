@@ -1,4 +1,5 @@
 package com.xiaomi.ad.keyword.marchinggiant.relevance
+import scala.math.sqrt
 import com.twitter.scalding.Args
 import org.apache.spark.sql.{SaveMode, SparkSession}
 import org.apache.spark.{SparkConf, SparkContext}
@@ -79,7 +80,7 @@ object testJoin {
                     val sum3 = interSet.map{ in =>
                         google.getOrElse(in, 0.0) * google.getOrElse(in, 0.0)
                     }.sum
-                    cosResult1(appId, sum1 / (sum2 + sum3))
+                    cosResult1(appId, sum1 / (sqrt(sum2) * sqrt(sum3)))
                 }.filter(f => f.cosSim > 0.0).toSeq
                 .sortBy(s => -s.cosSim)
     
@@ -110,7 +111,7 @@ object testJoin {
                     val sum3 = interSet.map{ in =>
                         emi.getOrElse(in, 0.0) * emi.getOrElse(in, 0.0)
                     }.sum
-                    cosResult1(appId, sum1 / (sum2 + sum3))
+                    cosResult1(appId, sum1 / (sqrt(sum2) * sqrt(sum3)))
                 }.filter(f => f.cosSim > 0.0).toSeq
                 .sortBy(s => -s.cosSim)
     
@@ -141,7 +142,7 @@ object testJoin {
                     val sum3 = interSet.map{ in =>
                         lda.getOrElse(in, 0.0) * lda.getOrElse(in, 0.0)
                     }.sum
-                    cosResult1(appId, sum1 / (sum2 + sum3))
+                    cosResult1(appId, sum1 / (sqrt(sum2) * sqrt(sum3)))
                 }.filter(f => f.cosSim > 0.0).toSeq
                 .sortBy(s => -s.cosSim)
                 
