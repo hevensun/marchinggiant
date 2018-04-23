@@ -74,7 +74,7 @@ object userCategory {
 
     val matrix = spark.read.parquet(args("input_matrix"))
       .as[BehaviorTag]
-      .filter(f => (f.sourceId == 2 || f.sourceId == 3 || f.sourceId == 5 || f.sourceId == 7) && !appSetB.value.contains(f.entityKey))
+      .filter(f => (f.sourceId == 1 || f.sourceId == 2) && !appSetB.value.contains(f.entityKey))
 
     matrix.persist()
 

@@ -11,26 +11,21 @@ package com.xiaomi.ad.keyword.marchinggiant.relevance.infofeed
   *   4. 输出结果如 ：adInfoTerm 定义所示。
   */
 
-import com.sun.jersey.core.util.Base64
-import com.sun.xml.internal.bind.v2.schemagen.xmlschema.Appinfo
 import com.twitter.scalding.Args
-import com.xiaomi.miui.ad.keyword.thrift.AdInfo
-import com.xiaomi.miui.ad.relevance.common.ThriftSerializer
 import org.apache.spark.SparkConf
-import org.apache.spark.sql.{SaveMode, SparkSession}
-import org.apache.spark.sql.functions.udf
+import org.apache.spark.sql.SparkSession
+import org.apache.spark.sql.SaveMode
 
 object adInfoCategory {
-  case class help(appId:String, score: Double)
+  case class help(cateId:String, score: Double)
   case class userResult(
                          imei1Md5: String, gCatSeq: Seq[help],  topicSeq: Seq[help], emiCatSeq: Seq[help], kwSeq:Seq[help]
                        )
-  case class Category(catId: Int, catName: String, score: Double)
-  case class googleCategory(name: String, score: Double)
-  case class EmiCategory(name: String, score: Double)
-  case class adResult(appId:String, gCatSeq:Seq[googleCategory], emiCatSeq:Seq[help], topicSeq:Seq[help])
-  case class LDATopic(topicId: Int, topicName: String, score: Double)
-  case class appInfo(
+  case class Category(id: Int, catName: String, score: Double)
+  case class EmiCategory(catName: String, score: Double)
+  case class adResult(appId:String, gCatSeq:Seq[help], emiCatSeq:Seq[help], topicSeq:Seq[help])
+  case class LDATopic(topicId: Int, score: Double, topicDesc: String)
+  case class AppInfo(
                       packageName: String,
                       appId: Long,
                       level1Category: String,
@@ -43,27 +38,24 @@ object adInfoCategory {
                       introduction: String,
                       brief: String
                     )
-  case class adInfoTerm(adId: Long, appinfo: Appinfo, category:Seq[Category], emiCategory: Seq[EmiCategory], lda:Seq[LDATopic])
+  case class adInfoTerm(adId: Long, appinfo: AppInfo, levelClassifies:Seq[Category], emiClassifies: Seq[EmiCategory], adTopicInfo:Seq[LDATopic])
+  case class adWithAppTerm(adId: Long, appId: Long, googleCategory:Seq[Category], emiCategory: Seq[EmiCategory], lda:Seq[LDATopic])
 
+  case class GoogleAppCate(appId: Long, gCatSeq:Seq[help])
+  case class EmiAppCate(appId: Long, emiCatSeq:Seq[help])
+  case class LdaAppCate(appId: Long, topicSeq:Seq[help])
 
   def main(args: Array[String]): Unit = {
     val argv = Args(args)
-    execute(argv, new SparkConf())
+    val sparkConf = new SparkConf()
+    sparkConf.setMaster("local")
+    execute(argv, sparkConf)
   }
 
 
   def execute(args: Args, sparkConf: SparkConf) = {
     val spark = SparkSession.builder().config(sparkConf).getOrCreate()
     import spark.implicits._
-
-    val adAppIds = spark.sparkContext.textFile(args("adInfoPath"), 500).map(line =>
-      ThriftSerializer.deserialize(Base64.decode(line), classOf[AdInfo]))
-      .filter(e => (e.isSetAppInfo && e.getAppInfo.isSetAppId && e.getAppInfo.getAppId > 0
-        && e.getAdId > 0)).map(e => {
-      val appinfo = e.getAppInfo
-      val appId = appinfo.getAppId.toString
-      (appId)
-    }).distinct().collect().toSet
 
     val cateExtend = spark.read.text(args("input_cateExtend"))
       .map{ m =>
@@ -81,46 +73,94 @@ object adInfoCategory {
 
     val cateExtendB = spark.sparkContext.broadcast(cateExtend)
 
-    val adAppIdsB = spark.sparkContext.broadcast(adAppIds)
-
-    val appUdf = udf { a: String => adAppIdsB.value.contains(a.toString) }
-
     val appAndCate = spark.read.parquet(args("input_adinfo"))
-      .distinct()
       .select($"adId", $"appInfo", $"levelClassifies", $"emiClassifies", $"adTopicInfo")
-      .as[adInfoTerm]
+    val appAndCateGroup = appAndCate.as[adInfoTerm].filter($"appInfo".isNotNull)
       .map { m =>
         val adId = m.adId
-        val appinfo = m.appinfo
-//        val appid =
-        val google = m.category.flatMap { g =>
-          val key = g.catId.toString
+        val appId = m.appinfo.appId
+        // 判断是否为空
+        val keywordsC = if(m.appinfo.keywordsClassifies==null) Seq() else m.appinfo.keywordsClassifies
+        val levelC = if(m.appinfo.levelClassifies==null) Seq() else m.appinfo.levelClassifies
+        val adlevelC = if(m.levelClassifies==null) Seq() else m.levelClassifies
+        val adWithAppCategoryG = keywordsC ++ levelC ++ adlevelC
+
+        // 判断是否为空
+        val keywordsT = if(m.appinfo.keywordsTopicInfo==null) Seq() else m.appinfo.keywordsTopicInfo
+        val adT = if(m.adTopicInfo==null) Seq() else m.adTopicInfo
+        val adWithAppLdaTopic = adT ++ keywordsT
+        val emiCategory = if(m.emiClassifies == null) Seq() else m.emiClassifies
+        (appId, adWithAppTerm(adId, appId, adWithAppCategoryG, emiCategory, adWithAppLdaTopic))
+      }.groupByKey(_._1)
+
+    val googleAppCate = appAndCateGroup.mapGroups { case (key, value) =>
+      val appId = key
+      val data = value
+      // google category extend
+      val googleCate = data.flatMap { terms =>
+        val cate = terms._2.googleCategory.map { r =>
+          val cateId = r.id
+          val score = r.score
+          help(cateId.toString, score)
+        }.flatMap { g =>
+          val key = g.cateId
           val value = g.score
           val extend = key +: cateExtendB.value.getOrElse(key, Seq())
-          val ss = extend.map{ mm =>
-            //                        help(mm, value)
-            mm -> value
+          val ss = extend.map { mm =>
+            help(mm, value)
           }
           ss
-          //                    help(g.catId.toString, g.score)
-        }.filter(f=> f._1 != "0")
-          .groupBy(_._1)
-          .map{m =>
-            val cate = m._1
-            val size = m._2.size
-            val score = m._2.map{mm=>
-              mm._2
-            }.sum
-            googleCategory(cate, score / size)
-          }.toSeq
-        val emi = m.emiCategory.map { e =>
-          help(e.name, e.score)
         }
-        val lda = m.lda.map { l =>
-          help(l.topicId.toString, l.score)
-        }
-        adResult(adId.toString, google, emi, lda)
-      }
+        cate
+      }.toSeq.filter(f => f.score != 0)
+        .groupBy(b => b.cateId)
+        .map { m =>
+          val cate = m._1
+          val size = m._2.size
+          val score = m._2.map(x => x.score).sum
+          help(cate, score / size)
+        }.toSeq
+      GoogleAppCate(appId, googleCate)
+    }
+    //emiCategory
+    val emiAppCate = appAndCateGroup.mapGroups { case (key, value) =>
+      val appId = key
+      val data = value
+      val emiCategory = data
+        .flatMap { terms =>
+          val emiCategory = terms._2.emiCategory
+          emiCategory
+        }.toSeq
+        .groupBy(_.catName)
+        .map { r =>
+          val emiCateName = r._1
+          val emiCateSize = r._2.size
+          val score = r._2.map(x => x.score).sum / emiCateSize
+          help(emiCateName, score)
+        }.toSeq
+      EmiAppCate(appId, emiCategory)
+    }
+
+    // lda topic
+    val ldaApptopic = appAndCateGroup.mapGroups { case (key, value) =>
+      val appId = key
+      val data = value
+      val ldaTopic = data
+        .flatMap(terms => terms._2.lda).toSeq
+        .groupBy(f => f.topicId).map { r =>
+        val topicId = r._1
+        val topicSizeNum = r._2.size
+        val topicName = r._2(0).topicDesc
+        val score = r._2.map(x => x.score).sum / topicSizeNum
+        help(topicId.toString, score)
+      }.toSeq
+      LdaAppCate(appId, ldaTopic)
+    }
+
+    val googleAndEmiAppCate = googleAppCate.join(emiAppCate, Seq("appId"))
+    val allCateAndTopic = googleAndEmiAppCate.join(ldaApptopic, Seq("appId"))
+//    allCateAndTopic.show(false)
+    allCateAndTopic.as[adResult]
       .repartition(1)
       .write
       .mode(SaveMode.Overwrite)
@@ -130,3 +170,4 @@ object adInfoCategory {
   }
 
 }
+
