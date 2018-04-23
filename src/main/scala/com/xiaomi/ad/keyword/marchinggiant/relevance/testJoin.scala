@@ -150,7 +150,9 @@ object testJoin {
                 .sortBy(s => -s.cosSim)
                 
                 cosResult3(m.imei1Md5, adAppGoole, adAppEmi, adAppLda)
-            }.repartition(200)
+            }
+            .filter(r => r.cosSimG.nonEmpty || r.cosSimE.nonEmpty || r.cosSimL.nonEmpty)
+            .repartition(400)
             .write
             .mode(SaveMode.Overwrite)
             .parquet(args("output"))
