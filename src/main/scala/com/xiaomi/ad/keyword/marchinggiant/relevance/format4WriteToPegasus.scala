@@ -30,8 +30,13 @@ object format4WriteToPegasus {
                         val score1 = t.cosSim + 1.0
                         f"${t.appId}%s:$score1%2.4f"
                 }.mkString(";")
-                s"$imeiStr,$simApps"
+                if (simApps.nonEmpty) {
+                    s"$imeiStr,$simApps"
+                } else {
+                    ""
+                }
             }
+            .filter(_.nonEmpty)
             .repartition(100)
             .write
             .mode(SaveMode.Overwrite)
