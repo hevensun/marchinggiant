@@ -32,7 +32,8 @@ object userSimilalyWithAd {
     execute(argv, new SparkConf())
   }
 
-  def cmpCosin(catSeq: Seq[help], adInfoMap: Map[String, Seq[Seq[String]]]): Seq[cosResult1] = {
+  // index 表示相似度计算类型 （0-2：google, emi , lda）
+  def cmpCosin(catSeq: Seq[help], adInfoMap: Map[String, Seq[Seq[String]]], index: Int = 0): Seq[cosResult1] = {
     val userGooList = catSeq.map { mm =>
       mm.appId
     }.toSet.toList
@@ -46,7 +47,7 @@ object userSimilalyWithAd {
 
     val adAppGoole = adInfoMap.map { app =>
       val appId = app._1
-      val adCate = app._2(0).map { add =>
+      val adCate = app._2(index).map { add =>
         add.split("\t")(0) -> add.split("\t")(1).toDouble
       }.toMap
 
@@ -105,9 +106,9 @@ object userSimilalyWithAd {
       .repartition(1000)
       .filter(f => f.gCatSeq.size < 500)
       .map{ m =>
-        val adAppGoole = cmpCosin(m.gCatSeq, appAndCateB.value)
-        val adAppEmi = cmpCosin(m.emiCatSeq, appAndCateB.value)
-        val adAppLda = cmpCosin(m.topicSeq, appAndCateB.value)
+        val adAppGoole = cmpCosin(m.gCatSeq, appAndCateB.value, 0)
+        val adAppEmi = cmpCosin(m.emiCatSeq, appAndCateB.value, 1)
+        val adAppLda = cmpCosin(m.topicSeq, appAndCateB.value, 2)
 
         cosResult3(m.imei1Md5, adAppGoole, adAppEmi, adAppLda)
       }.repartition(200)
