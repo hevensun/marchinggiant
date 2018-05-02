@@ -4,12 +4,8 @@ import com.twitter.scalding.Args
 import org.apache.spark.SparkConf
 import org.apache.spark.sql.{SaveMode, SparkSession}
 import com.xiaomi.ad.qu.get_query_term_weight.usage.{getTermImp, getTermWeight}
-import org.apache.spark
 
 import collection.JavaConverters._
-import scala.reflect.ClassTag
-import scala.util.Try
-
 /**
   * create by liguoyu on 2018-04-28
   * 该类在原有基础上添加 app category (google ,emi)和 lda topic 以及 app keywords
