@@ -44,8 +44,8 @@ object appCategory {
 
         val adAppIds = spark.sparkContext.textFile(args("adInfoPath"), 500).map(line =>
             ThriftSerializer.deserialize(Base64.decode(line), classOf[AdInfo]))
-            .filter(e => (e.isSetAppInfo && e.getAppInfo.isSetAppId && e.getAppInfo.getAppId > 0
-                && e.getAdId > 0)).map(e => {
+          .filter(e => (e.isSetAppInfo && e.getAppInfo.isSetAppId && e.getAppInfo.getAppId > 0
+            && e.getAdId > 0)).map(e => {
             val appinfo = e.getAppInfo
             val appId = appinfo.getAppId.toString
             (appId)

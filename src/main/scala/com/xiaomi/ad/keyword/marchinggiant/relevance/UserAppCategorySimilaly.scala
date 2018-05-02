@@ -1,8 +1,9 @@
 package com.xiaomi.ad.keyword.marchinggiant.relevance
 
 import com.twitter.scalding.Args
-import org.apache.spark.SparkConf
 import org.apache.spark.sql.{SaveMode, SparkSession}
+import org.apache.spark.{SparkConf, SparkContext}
+
 
 import scala.math.sqrt
 
