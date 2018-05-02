@@ -43,7 +43,7 @@ object UserAppCategorySimilaly {
 
     val adAppGoole = adInfoMap.map { app =>
       val appId = app._1
-      val adCate = app._2(Int).map { add =>
+      val adCate = app._2(tpc).map { add =>
         add.split("\t")(0) -> add.split("\t")(1).toDouble
       }.toMap
 

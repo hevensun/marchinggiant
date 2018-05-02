@@ -27,26 +27,6 @@ object userCategoryAppExtension_T {
   case class LdaTopic(topicId: Int, topicName: String, score: Double)
 
   /**
-    * root
-    * |-- appId: long (nullable = true)
-    * |-- packageName: string (nullable = true)
-    * |-- keywords: array (nullable = true)
-    * |    |-- element: string (containsNull = true)
-    * |-- category: array (nullable = true)
-    * |    |-- element: struct (containsNull = true)
-    * |    |    |-- catId: integer (nullable = true)
-    * |    |    |-- catName: string (nullable = true)
-    * |    |    |-- score: double (nullable = true)
-    * |-- emiCategory: array (nullable = true)
-    * |    |-- element: struct (containsNull = true)
-    * |    |    |-- name: string (nullable = true)
-    * |    |    |-- score: double (nullable = true)
-    * |-- lda: array (nullable = true)
-    * |    |-- element: struct (containsNull = true)
-    * |    |    |-- topicId: integer (nullable = true)
-    * |    |    |-- topicName: string (nullable = true)
-    * |    |    |-- score: double (nullable = true)
-    *
     * @param appId
     * @param packageName
     * @param keywords
@@ -172,7 +152,7 @@ object userCategoryAppExtension_T {
     }
   }
 
-  def getAppKeyWords(data: BehaviorTag, packageMap: Map[String, Seq[(String, Double)]], appIdMap: Map[String, Seq[(String, Double)]]): Seq[String] = {
+  def getAppKeyWords(data: BehaviorTag, packageMap: Map[String, Seq[(String)]], appIdMap: Map[String, Seq[(String)]]): Seq[String] = {
     val sourceId = data.sourceId
     val actionId = data.actionId
     val re1 = if (sourceId == 3) {
@@ -184,26 +164,39 @@ object userCategoryAppExtension_T {
       if (appIdMap.contains(appid)) appIdMap.get(appid).get else Seq()
     }
     else Seq()
-    re1.map{r=>
-      r._1+":"+r._2.toString
-    }
+    re1//.map{r=>
+//      r._1+":"+r._2.toString
+//    }toString
   }
 
   // get Term for cate emi lda (0-5 : gcate, emiCate, ldaTopic, appGcate, appEmiCate, appLdaTopic)
-  def getTerm(data: Seq[Seq[Seq[String]]], typeC: Int): Seq[Term] ={
-    data.flatMap{r=>
-      val cate = r(typeC).map{r=>
-        val term = r.split(":")
-        val cateId = term(0)
-        val score = term(1).toDouble
-        (cateId, score)
-      }
-      cate
+  def getTerm(data: Seq[String]): Seq[Term] ={
+    if(data == null||data.isEmpty) Seq()
+    else data.map{r=>
+      val term = r.split(":")
+      val cateId = term(0)
+      val score = term(1).toDouble
+      (cateId, score)
     }.groupBy(_._1).map{case(key, value)=>
       val cateId = key
       val size = value.size
       val score = value.map{a=>a._2}.sum
       Term(cateId, score/size)
+    }.toSeq
+  }
+
+  def mergeCate(data: Seq[String]): Seq[String] ={
+    if(data == null||data.isEmpty) Seq()
+    else data.map{r=>
+      val term = r.split(":")
+      val cateId = term(0)
+      val score = term(1).toDouble
+      (cateId, score)
+    }.groupBy(_._1).map{case(key, value)=>
+      val cateId = key
+      val size = value.size
+      val score = value.map{a=>a._2}.sum
+      cateId+":"+(score/size).toString
     }.toSeq
   }
 
@@ -270,7 +263,7 @@ object userCategoryAppExtension_T {
 
     val matrix = spark.read.parquet(args("input_matrix"))
       .as[BehaviorTag]
-      .filter(f => (f.sourceId == 2 || f.sourceId == 3 || f.sourceId == 5 || f.sourceId == 7) && !appSetB.value.contains(f.entityKey))
+      .filter(f => (f.sourceId == 3 || f.sourceId == 5) && !appSetB.value.contains(f.entityKey))
 
     matrix.persist()
 
@@ -380,120 +373,67 @@ object userCategoryAppExtension_T {
     val tt = matrix.filter(f => !userFilterB.value.contains(f.imei1Md5))
       .mapPartitions{rows=>
         rows.map{r=>
-          val randomNum = 1000+rndBc.value.nextInt(8999)
-//          val imei = randomNum.toString+r.imei1Md5
+          val randomNum = args("hashS").toInt + rndBc.value.nextInt(args("hashKey").toInt)
           val imei = randomNum.toString + r.imei1Md5
           val gCate = getGoogleCateSeq(r, cateExtendB.value)
           val emiCate = getEmiOrTopic("6", r)
           val ldaTopic = getEmiOrTopic("3", r)
           val keywords = getKeyWordWeigth(r.text, qtw, gtm)
-
           // 添加 app google category ;emi category; lda topic; key word
           val appGcate = getAppCateOrTopic(r, appCategoryMapPackageBC.value, appCategoryMapAppIdBC.value)
           val appEmiCate = getAppCateOrTopic(r, appEmiCategoryMapPackageBC.value, appEmiCategoryMapAppIdBC.value)
           val appLdaTopic = getAppCateOrTopic(r, appLdaTopicMapPackageBC.value, appLdaTopicMapAppIdBC.value)
-          val appkeywords = getAppCateOrTopic(r, appKeywordsMapPackageBC.value, appKeywordsMapAppIdBC.value)
-          imei->r
+          val appkeywords = getAppKeyWords(r, appKeywordsMapPackageBC.value, appKeywordsMapAppIdBC.value)
+          imei->(r.imei1Md5, gCate, emiCate, ldaTopic, keywords, appGcate, appEmiCate, appLdaTopic, appkeywords)
         }
       }
-      .groupByKey(_._1)
-      .mapGroups { case (imei, bts) =>
-        val value_bts = bts.map{rr=>rr._2}.toSeq
-        val imeiMd5 = value_bts.head.imei1Md5
-        val google = getGoogleCateSeq(value_bts, cateExtendB.value)
-
-        val topic = getEmiOrTopic("3", value_bts)
-
-        val emi = getEmiOrTopic("6", value_bts)
-
-        val kwq = value_bts.filter(f => (!f.text.isEmpty && f.text != None))
-          .flatMap { mm =>
-            val query = mm.text.trim.replace(" ", "")
-            val term1 = qtw.getWeight(query).asScala.map { t =>
-              val term = t.split("\t")
-              if (term.size == 2) {
-                val key = term(0).trim
-                val value = term(1).trim.toDouble
-                Term(key, value)
-              } else {
-                Term("###", 0.000)
-              }
-            }
-            val term2 = gtm.getTermImp(query).asScala.map { t =>
-              val term = t.split("\t")
-              if (term.size == 2) {
-                val key = term(0).trim
-                val value = term(1).trim.toDouble
-                Term(key, value)
-              } else {
-                Term("###", 0.000)
-              }
-            }
-            val nterm1 = term1.filter(f => f.cate != "###").toList
-            val nterm2 = term2.filter(f => f.cate != "###").toList
-            val term = nterm1 ++ nterm2
-            term
-          }.map(r=>r.cate+":"+r.score.toString)
-
-        //添加 app extension category; emicategory; lda topic; keywords
-        //添加 app extension category;
-        val appGoogleCat = getAppCateOrTopic(value_bts,appCategoryMapPackageBC.value, appCategoryMapAppIdBC.value)
-
-        val appEmiCat = getAppCateOrTopic(value_bts,appEmiCategoryMapPackageBC.value, appEmiCategoryMapPackageBC.value)
-        //添加 app extension lda topic;
-        val appLdaTopic = getAppCateOrTopic(value_bts,appLdaTopicMapPackageBC.value, appLdaTopicMapAppIdBC.value)
-        //添加 app extension key word;
-        val appKeywords = value_bts.flatMap{rows=>
-          val sourceId = rows.sourceId
-          val actionId = rows.actionId
-          val re1 = if(sourceId == 3){
-            val packageName = Try(rows.entityKey.split('|').last).getOrElse("")
-            val state = appKeywordsMapPackageBC.value.contains(packageName)
-            if(state){
-              val keywords = appKeywordsMapPackageBC.value.get(packageName).get
-              if(keywords.isEmpty) Seq()
-              else keywords
-            }
-            else Seq()
-          }
-          else if(sourceId == 5&& (actionId==1||actionId==4)){
-            val appid = Try(rows.text).getOrElse("")
-            val state = appKeywordsMapAppIdBC.value.contains(appid)
-            if(state){
-              val keywords = appKeywordsMapAppIdBC.value.get(appid).get
-              if(keywords.isEmpty) Seq()
-              else keywords
-            }
-            else Seq()
-          }
-          else Seq()
-          re1
-        }.toSet.toSeq
-        val appKeyWords = if(appKeywords==null||appKeywords.isEmpty) Seq()
-        else appKeywords.map{r=>
-          val word = r
-          val score = qtw.getWeight(word)
-          word+":"+score.toString
-        }
-        //        ResultAppExtension(imeiMd5, google, topic, emi, kwq, appGoogleCat, appLdaTopic, appEmiCat, appKeyWords)
-        //        ResultAppExtension(imei, google, topic, emi, kwq, appGoogleCat, Seq(), Seq(), Seq())
-        imeiMd5->Seq(google, topic, emi, kwq, appGoogleCat, appLdaTopic, appEmiCat, appKeyWords)
-      }.groupByKey(_._1)
-      .mapGroups{case(key, value_bts)=>
-        val imei = key
-        val value_seq = value_bts.map{r=>r._2}.toSeq
-        val googleCate = getTerm(value_seq, 0)
-        val ldaTopic = getTerm(value_seq,1)
-        val emiCategory = getTerm(value_seq,2)
-        val keyWords = getTerm(value_seq, 3)
-        val appGoogleCate = getTerm(value_seq, 4)
-        val appLdaTopic = getTerm(value_seq, 5)
-        val appEmiCate = getTerm(value_seq, 6)
-        val appKeywords = value_seq.flatMap{rr=>
-          rr(7)
-        }
-        ResultAppExtension(imei, googleCate, ldaTopic, emiCategory, keyWords, appGoogleCate, appLdaTopic, appEmiCate, appKeywords)
+      .rdd
+      .reduceByKey{(x, y)=>
+        val imei = x._1
+        val gCate = mergeCate(x._2 ++ y._2)
+        val emiCate = mergeCate(x._3 ++ y._3)
+        val lda = mergeCate(x._4 ++ y._4)
+        val keywords = x._5 ++ y._5
+        val appGCate = mergeCate(x._6 ++ y._6)
+        val appEmiCate = mergeCate(x._7 ++ y._7)
+        val appLda = mergeCate(x._8 ++ y._8)
+        val appKeywords = x._9 ++ y._9
+        (imei, gCate, emiCate, lda, keywords, appGCate, appEmiCate, appLda, appKeywords)
       }
+      .mapPartitions{rows=>
+        rows.map{r=>
+          val line = r._2
+          val imei = line._1
+          imei-> line
+        }
+      }
+      .reduceByKey{(x, y)=>
+        val imei = x._1
+        val gCate = mergeCate(x._2 ++ y._2)
+        val emiCate = mergeCate(x._3 ++ y._3)
+        val lda = mergeCate(x._4 ++ y._4)
+        val keywords = x._5 ++ y._5
+        val appGCate = mergeCate(x._6 ++ y._6)
+        val appEmiCate = mergeCate(x._7 ++ y._7)
+        val appLda = mergeCate(x._8 ++ y._8)
+        val appKeywords = x._9 ++ y._9
+        (imei, gCate, emiCate, lda, keywords, appGCate, appEmiCate, appLda, appKeywords)
+      }.mapPartitions{rows=>
+        rows.map{r=>
+          val imei = r._1
+          val x = r._2
+          val gCate = getTerm(x._2)
+          val emiCate = getTerm(x._3)
+          val lda = getTerm(x._4)
+          val keywords = x._5
+          val appGCate = getTerm(x._6)
+          val appEmiCate = getTerm(x._7)
+          val appLda = getTerm(x._8)
+          val appKeywords = x._9
+          ResultAppExtension(imei, gCate, lda, emiCate, keywords, appGCate, appLda, appEmiCate, appKeywords)
+        }
+      }.toDS().as[ResultAppExtension]
+
     tt.filter(r => r.gCatSeq.nonEmpty || r.emiCatSeq.nonEmpty || r.topicSeq.nonEmpty||r.appEmiCatSeq.nonEmpty||r.appGoogleCatSeq.nonEmpty||r.appTopicSeq.nonEmpty||r.appKeyWordsSeq.nonEmpty)
       .repartition(500)
       .write

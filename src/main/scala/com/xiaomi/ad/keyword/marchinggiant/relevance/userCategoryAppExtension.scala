@@ -23,26 +23,6 @@ object userCategoryAppExtension {
   case class LdaTopic(topicId: Int, topicName: String, score: Double)
 
   /**
-    * root
- |-- appId: long (nullable = true)
- |-- packageName: string (nullable = true)
- |-- keywords: array (nullable = true)
- |    |-- element: string (containsNull = true)
- |-- category: array (nullable = true)
- |    |-- element: struct (containsNull = true)
- |    |    |-- catId: integer (nullable = true)
- |    |    |-- catName: string (nullable = true)
- |    |    |-- score: double (nullable = true)
- |-- emiCategory: array (nullable = true)
- |    |-- element: struct (containsNull = true)
- |    |    |-- name: string (nullable = true)
- |    |    |-- score: double (nullable = true)
- |-- lda: array (nullable = true)
- |    |-- element: struct (containsNull = true)
- |    |    |-- topicId: integer (nullable = true)
- |    |    |-- topicName: string (nullable = true)
- |    |    |-- score: double (nullable = true)
-
     * @param appId
     * @param packageName
     * @param keywords
@@ -265,7 +245,7 @@ object userCategoryAppExtension {
 
     val matrix = spark.read.parquet(args("input_matrix"))
       .as[BehaviorTag]
-      .filter(f => (f.sourceId == 2 || f.sourceId == 3 || f.sourceId == 5 || f.sourceId == 7) && !appSetB.value.contains(f.entityKey))
+      .filter(f => (f.sourceId == 3 || (f.sourceId == 5&&(f.actionId==1||f.actionId==4))) && !appSetB.value.contains(f.entityKey))
 
     matrix.persist()
 
