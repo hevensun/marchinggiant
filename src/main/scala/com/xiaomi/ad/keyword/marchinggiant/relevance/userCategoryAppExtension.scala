@@ -167,6 +167,55 @@ object userCategoryAppExtension {
       }.toSeq
   }
 
+  def getAppCateExtension(data: Seq[BehaviorTag], packageMap: Map[String, Seq[(String, Double)]], appIdMap: Map[String, Seq[(String, Double)]], cateExtendB: Map[String, Seq[String]]): Seq[String] ={
+    data.flatMap{rows=>
+      val sourceId = rows.sourceId
+      val actionId = rows.actionId
+      val re1 = if(sourceId == 3){
+        val packageName = rows.entityKey.split('|').last
+        if(packageMap.contains(packageName))
+        {
+          packageMap.get(packageName).get
+            .flatMap{a=>
+              val cate = a._1
+              val score = a._2
+              val extend = cate +: cateExtendB.getOrElse(cate, Seq())
+              val sss = extend.map{ mmm =>
+                (mmm, score)
+              }
+              sss
+            }.filter(f=>f._1 != "0")
+        }
+        else Seq()
+      }
+      else if(sourceId == 5 && (actionId == 1|| actionId == 4)){
+        val appid = rows.text
+        if(appIdMap.contains(appid))
+        {
+          appIdMap.get(appid).get
+            .flatMap{a=>
+              val cate = a._1
+              val score = a._2
+              val extend = cate +: cateExtendB.getOrElse(cate, Seq())
+              val sss = extend.map{ mmm =>
+                (mmm, score)
+              }
+              sss
+            }.filter(f=>f._1 != "0")
+        }
+        else Seq()
+      }
+      else Seq()
+      re1
+    }.groupBy(f=>f._1)
+      .map{row=>
+        val catId = row._1
+        val size = row._2.size
+        val score = row._2.map{r=>r._2}.sum
+        catId.toString+":"+(score/size).toString
+      }.toSeq
+  }
+
   // get Term for cate emi lda (0-5 : gcate, emiCate, ldaTopic, appGcate, appEmiCate, appLdaTopic)
   def getTerm(data: Seq[Seq[Seq[String]]], typeC: Int): Seq[Term] ={
     data.flatMap{r=>
@@ -401,7 +450,7 @@ object userCategoryAppExtension {
 
         //添加 app extension category; emicategory; lda topic; keywords
         //添加 app extension category;
-        val appGoogleCat = getAppCateOrTopic(value_bts,appCategoryMapPackageBC.value, appCategoryMapAppIdBC.value)
+        val appGoogleCat = getAppCateExtension(value_bts,appCategoryMapPackageBC.value, appCategoryMapAppIdBC.value, cateExtendB.value)
 
         val appEmiCat = getAppCateOrTopic(value_bts,appEmiCategoryMapPackageBC.value, appEmiCategoryMapPackageBC.value)
         //添加 app extension lda topic;

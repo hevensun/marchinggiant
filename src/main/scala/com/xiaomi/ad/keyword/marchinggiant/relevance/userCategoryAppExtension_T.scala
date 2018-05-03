@@ -160,9 +160,55 @@ object userCategoryAppExtension_T {
       if (appIdMap.contains(appid)) appIdMap.get(appid).get else Seq()
     }
     else Seq()
-    re1//.map{r=>
-//      r._1+":"+r._2.toString
-//    }toString
+    re1
+  }
+
+  def getAppCateExtension(data: BehaviorTag, packageMap: Map[String, Seq[(String, Double)]], appIdMap: Map[String, Seq[(String, Double)]], cateExtendB: Map[String, Seq[String]]): Seq[String] ={
+    val sourceId = data.sourceId
+    val actionId = data.actionId
+    val re1 = if(sourceId == 3){
+      val packageName = data.entityKey.split('|').last
+      if(packageMap.contains(packageName))
+      {
+        packageMap.get(packageName).get
+          .flatMap{a=>
+            val cate = a._1
+            val score = a._2
+            val extend = cate +: cateExtendB.getOrElse(cate, Seq())
+            val sss = extend.map{ mmm =>
+              (mmm, score)
+            }
+            sss
+          }.filter(f=>f._1 != "0")
+      }
+      else Seq()
+    }
+    else if(sourceId == 5 && (actionId == 1|| actionId == 4)){
+      val appid = data.text
+      if(appIdMap.contains(appid))
+      {
+        appIdMap.get(appid).get
+          .flatMap{a=>
+            val cate = a._1
+            val score = a._2
+            val extend = cate +: cateExtendB.getOrElse(cate, Seq())
+            val sss = extend.map{ mmm =>
+              (mmm, score)
+            }
+            sss
+          }.filter(f=>f._1 != "0")
+      }
+      else Seq()
+    }
+    else Seq()
+    re1
+    .groupBy(f=>f._1)
+      .map{row=>
+        val catId = row._1
+        val size = row._2.size
+        val score = row._2.map{r=>r._2}.sum
+        catId.toString+":"+(score/size).toString
+      }.toSeq
   }
 
   // get Term for cate emi lda (0-5 : gcate, emiCate, ldaTopic, appGcate, appEmiCate, appLdaTopic)
@@ -380,7 +426,7 @@ object userCategoryAppExtension_T {
           val ldaTopic = getEmiOrTopic("3", r)
           val keywords = getKeyWordWeigth(r.text, qtw, gtm)
           // 添加 app google category ;emi category; lda topic; key word
-          val appGcate = getAppCateOrTopic(r, appCategoryMapPackageBC.value, appCategoryMapAppIdBC.value)
+          val appGcate = getAppCateExtension(r,appCategoryMapPackageBC.value, appCategoryMapAppIdBC.value, cateExtendB.value)
           val appEmiCate = getAppCateOrTopic(r, appEmiCategoryMapPackageBC.value, appEmiCategoryMapAppIdBC.value)
           val appLdaTopic = getAppCateOrTopic(r, appLdaTopicMapPackageBC.value, appLdaTopicMapAppIdBC.value)
           val appkeywords = getAppKeyWords(r, appKeywordsMapPackageBC.value, appKeywordsMapAppIdBC.value)
