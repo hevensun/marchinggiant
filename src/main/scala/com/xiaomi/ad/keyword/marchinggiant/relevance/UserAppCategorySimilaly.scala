@@ -115,7 +115,7 @@ object UserAppCategorySimilaly {
     val user = spark.read.parquet(args("input1"))
       .as[ResultAppExtension]
       .repartition(5000)
-      .filter(f => f.gCatSeq.size < 500)
+      .filter(f => f.gCatSeq.size < 500&&f.appGoogleCatSeq.size < 500&&f.emiCatSeq.size<500&&f.topicSeq.size<500&&f.appEmiCatSeq.size<500&&f.appTopicSeq.size<500)
       .map { m =>
         val Goole = cmpCosin(m.gCatSeq, appAndCateB.value, 0)
         val Emi = cmpCosin(m.emiCatSeq, appAndCateB.value, 1)
