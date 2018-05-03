@@ -3,7 +3,7 @@ package com.xiaomi.ad.keyword.marchinggiant.relevance.infofeed
 /**
   * create by liguoyu 2018-04-20
   * 处理user category 向量和 ad info 中的appid 的category 向量
-  * 输入是 userCategory 处理得到的user category 向量, adInfoCategory 处理得到的ad app category 向量
+  * 输入是 userCategoryOptimize 处理得到的user category 向量, adInfoCategory 处理得到的ad app category 向量
   * 计算google category , emi category , lda topic 等向量的cos 值
   * 输出结果
   */

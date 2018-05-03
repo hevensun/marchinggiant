@@ -366,10 +366,14 @@ object userCategoryAppExtension_T {
     val userFilterB = spark.sparkContext.broadcast(userFilter)
     val rnd = new scala.util.Random
     val rndBc = spark.sparkContext.broadcast(rnd)
+
+    val hashStart = spark.sparkContext.broadcast(args("hashS").toInt)
+    val hashRange = spark.sparkContext.broadcast(args("hashKey").toInt)
+
     val tt = matrix.filter(f => !userFilterB.value.contains(f.imei1Md5))
       .mapPartitions{rows=>
         rows.map{r=>
-          val randomNum = args("hashS").toInt + rndBc.value.nextInt(args("hashKey").toInt)
+          val randomNum = hashStart.value + rndBc.value.nextInt(hashRange.value)
           val imei = randomNum.toString + r.imei1Md5
           val gCate = getGoogleCateSeq(r, cateExtendB.value)
           val emiCate = getEmiOrTopic("6", r)
