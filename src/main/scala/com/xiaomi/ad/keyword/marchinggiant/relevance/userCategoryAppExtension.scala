@@ -488,8 +488,6 @@ object userCategoryAppExtension {
           val score = qtw.getWeight(word)
           word+":"+score.toString
         }
-//        ResultAppExtension(imeiMd5, google, topic, emi, kwq, appGoogleCat, appLdaTopic, appEmiCat, appKeyWords)
-//        ResultAppExtension(imei, google, topic, emi, kwq, appGoogleCat, Seq(), Seq(), Seq())
         imeiMd5->Seq(google, topic, emi, kwq, appGoogleCat, appLdaTopic, appEmiCat, appKeyWords)
       }.groupByKey(_._1)
       .mapGroups{case(key, value_bts)=>

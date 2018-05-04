@@ -1,7 +1,7 @@
 package com.xiaomi.ad.keyword.marchinggiant.relevance.infofeed
 
 /**
-  * Create by liguoyu 2018-04-20
+  * Create by liguoyu 2018-05-02
   * 输入  user category 向量 和 adinfo app category 向量
   * 计算 对以上二者计算 cos 距离
   * 输出 user 和 adinfo app 的相似度
