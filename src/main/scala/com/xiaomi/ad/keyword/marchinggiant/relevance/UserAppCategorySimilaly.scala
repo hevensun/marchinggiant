@@ -40,7 +40,6 @@ object UserAppCategorySimilaly {
   def main(args: Array[String]): Unit = {
     val argv = Args(args)
     val conf = new SparkConf()
-//    conf.set("spark.shuffle.blockTransferService", "nio")
     execute(argv, conf)
   }
 

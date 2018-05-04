@@ -85,6 +85,7 @@ object userCategoryAppExtension_T {
     execute(argv, conf)
   }
 
+  // get google category and extend those category
   def getGoogleCateSeq(data: BehaviorTag, cateExtendB: Map[String, Seq[String]]): Seq[String] = {
     val ss = data.extension.getOrElse("2", "0:0").split(" ")
       .flatMap { mm =>
@@ -109,6 +110,7 @@ object userCategoryAppExtension_T {
     ss
   }
 
+  // get emi category or topic
   def getEmiOrTopic(splitC: String, data: BehaviorTag): Seq[String] = {
     val ss = data.extension.getOrElse(splitC, "0:0").split(" ")
       .map { mm =>
@@ -131,6 +133,7 @@ object userCategoryAppExtension_T {
     ss
   }
 
+  // get app eim category or topic
   def getAppCateOrTopic(data: BehaviorTag, packageMap: Map[String, Seq[(String, Double)]], appIdMap: Map[String, Seq[(String, Double)]]): Seq[String] = {
     val sourceId = data.sourceId
     val actionId = data.actionId
@@ -148,6 +151,7 @@ object userCategoryAppExtension_T {
     }
   }
 
+  // get key words
   def getAppKeyWords(data: BehaviorTag, packageMap: Map[String, Seq[(String)]], appIdMap: Map[String, Seq[(String)]]): Seq[String] = {
     val sourceId = data.sourceId
     val actionId = data.actionId
@@ -163,6 +167,7 @@ object userCategoryAppExtension_T {
     re1
   }
 
+  // get app category's extension categories
   def getAppCateExtension(data: BehaviorTag, packageMap: Map[String, Seq[(String, Double)]], appIdMap: Map[String, Seq[(String, Double)]], cateExtendB: Map[String, Seq[String]]): Seq[String] ={
     val sourceId = data.sourceId
     val actionId = data.actionId
@@ -227,6 +232,7 @@ object userCategoryAppExtension_T {
     }.toSeq
   }
 
+  //merge and caculator arg value for same category id or topic
   def mergeCate(data: Seq[String]): Seq[String] ={
     if(data == null||data.isEmpty) Seq()
     else data.map{r=>
@@ -242,6 +248,7 @@ object userCategoryAppExtension_T {
     }.toSeq
   }
 
+  // get keywords' word weight
   def getKeyWordWeigth(query: String, qtw: getTermWeight, gtm: getTermImp): Seq[Term] ={
     if(query==null||query.isEmpty) Seq()
     else {
