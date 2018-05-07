@@ -25,10 +25,9 @@ object format4WriteToPegasus {
             .map { m =>
                 val imeiStr = m.imei
                 val gCateList = m.cosSimG
-                val simApps = gCateList.map {
-                    t =>
-                        val score1 = t.cosSim + 1.0
-                        f"${t.appId}%s:$score1%2.4f"
+                val simApps = gCateList.map { t =>
+                  val score1 = t.cosSim + 1.0
+                  f"${t.appId}%s:$score1%2.4f"
                 }.mkString(";")
                 if (simApps.nonEmpty) {
                     s"$imeiStr,$simApps"
