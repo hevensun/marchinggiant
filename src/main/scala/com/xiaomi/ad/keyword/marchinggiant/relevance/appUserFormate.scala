@@ -3,6 +3,7 @@ package com.xiaomi.ad.keyword.marchinggiant.relevance
 import com.twitter.scalding.Args
 import org.apache.spark.SparkConf
 import org.apache.spark.sql.{SaveMode, SparkSession}
+import scala.math.sqrt
 
 /**
   * crteate by liguoyu on 2018-05-07
@@ -35,7 +36,7 @@ object appUserFormate {
         val simApps = unionList.map{r=>
           val score1 = simcaMap.getOrElse(r, 0.0) + 1.0
           val score2 = appExMap.getOrElse(r, 0.0) + 1.0
-          f"${r}%s:${score1*score2}%2.4f"
+          f"${r}%s:${sqrt(score1*score2)}%2.4f"
         }.mkString(";")
 
         if (simApps.nonEmpty) {
