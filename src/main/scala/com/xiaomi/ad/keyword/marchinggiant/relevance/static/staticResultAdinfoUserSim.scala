@@ -28,7 +28,10 @@ object staticResultAdinfoUserSim {
       write_result.saveAsTextFile(input_p("output"))
     }
     else{
-      val write_result = spark.sparkContext.makeRDD(("app numer :"+appCount.toString+"\n users category number :"+userCount.toString+"\nresult count :"+resultCount.toString+"\nresult path :"+resultPath))
+      val write_result = spark.sparkContext.makeRDD(Seq("Ad numer :"+appCount.toString,
+        " users category number :"+userCount.toString,
+        "result count :"+resultCount.toString,
+        "result path :"+resultPath))
       write_result.repartition(1).saveAsTextFile(input_p("output"))
     }
     spark.stop()
