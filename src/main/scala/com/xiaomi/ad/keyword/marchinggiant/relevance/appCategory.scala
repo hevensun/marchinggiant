@@ -65,11 +65,20 @@ object appCategory {
             .collect()
             .toMap
 
+        val appIdsRemain = spark.read.textFile(args("heat_result"))
+          .map{r=>
+            val item = r.split("\t", 2)
+            val appId = item(0)
+            (appId)
+          }.distinct().collect().toSet
+
         val cateExtendB = spark.sparkContext.broadcast(cateExtend)
 
         val adAppIdsB = spark.sparkContext.broadcast(adAppIds)
 
-        val appUdf = udf { a: String => adAppIdsB.value.contains(a.toString) }
+        val appIdRemainBc = spark.sparkContext.broadcast(appIdsRemain)
+
+        val appUdf = udf { a: String => adAppIdsB.value.contains(a.toString)&&appIdRemainBc.value.contains(a.toString) }
 
         val appAndCate = spark.read.parquet(args("input_app"))
             .filter(appUdf($"appId"))
