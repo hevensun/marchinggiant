@@ -48,7 +48,7 @@ object userCategoryOptimize {
     execute(argv, new SparkConf())
   }
 
-  def getGoogleCateSeq(data: BehaviorTag, cateExtendB: Map[String, Seq[String]]): Seq[String] = {
+  def getGoogleCateSeq(data: BehaviorTag, cateExtendB: Map[String, Seq[String]], thread: Double): Seq[String] = {
     val ss = data.extension.getOrElse("2", "0:0").split(" ")
       .flatMap { mm =>
         val term = mm.split(":")
@@ -59,7 +59,7 @@ object userCategoryOptimize {
           (mmm, value)
         }
         sss
-      }.filter(f => f._1 != "0")
+      }.filter(f => f._1 != "0"&&f._2 > thread)
       .groupBy(_._1)
       .map { m =>
         val cate = m._1
@@ -72,7 +72,7 @@ object userCategoryOptimize {
     ss
   }
 
-  def getEmiOrTopic(splitC: String, data: BehaviorTag): Seq[String] = {
+  def getEmiOrTopic(splitC: String, data: BehaviorTag, thread: Double): Seq[String] = {
     val ss = data.extension.getOrElse(splitC, "0:0").split(" ")
       .map { mm =>
         val term = mm.split(":")
@@ -80,7 +80,7 @@ object userCategoryOptimize {
         val value = term(1).toDouble
         key -> value
 
-      }.filter(f => f._1 != "0")
+      }.filter(f => f._1 != "0"&&f._2>thread)
       .groupBy(_._1)
       .map { m =>
         val cate = m._1
@@ -194,6 +194,8 @@ object userCategoryOptimize {
 
     val threshold = args("input_threshold").toInt
 
+    val cateThread = spark.sparkContext.broadcast(args("CateThread").toDouble)
+
     val userFilter = matrix.map { m =>
       m.imei1Md5 -> 1
     }.rdd
@@ -217,9 +219,9 @@ object userCategoryOptimize {
         rows.map{r=>
           val randomNum = hashStart.value + rndBc.value.nextInt(hashRange.value)
           val imei = randomNum.toString + r.imei1Md5
-          val gCate = getGoogleCateSeq(r, cateExtendB.value)
-          val emiCate = getEmiOrTopic("6", r)
-          val ldaTopic = getEmiOrTopic("3", r)
+          val gCate = getGoogleCateSeq(r, cateExtendB.value, cateThread.value)
+          val emiCate = getEmiOrTopic("6", r, cateThread.value)
+          val ldaTopic = getEmiOrTopic("3", r, 0.0)
           val keywords = getKeyWordWeigth(r.text, qtw, gtm)
           // 添加 app google category ;emi category; lda topic; key word
           imei->(r.imei1Md5, gCate, emiCate, ldaTopic, keywords)

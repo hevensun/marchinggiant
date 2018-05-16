@@ -80,6 +80,8 @@ object appCategory {
 
         val appUdf = udf { a: String => adAppIdsB.value.contains(a.toString)&&appIdRemainBc.value.contains(a.toString) }
 
+        val cateThread = spark.sparkContext.broadcast(args("CateThread").toDouble)
+
         val appAndCate = spark.read.parquet(args("input_app"))
             .filter(appUdf($"appId"))
             .distinct()
@@ -95,7 +97,7 @@ object appCategory {
                         mm -> value
                     }
                     ss
-                }.filter(f => f._1 != "0")
+                }.filter(f => f._1 != "0"&&f._2>cateThread.value)
                     .groupBy(_._1)
                     .map { m =>
                         val cate = m._1
@@ -107,7 +109,7 @@ object appCategory {
                     }.toSeq
                 val emi = m.emiCategory.map { e =>
                     help(e.name, e.score)
-                }
+                }.filter(_.score>cateThread.value)
                 val lda = m.lda.map { l =>
                     help(l.topicId.toString, l.score)
                 }

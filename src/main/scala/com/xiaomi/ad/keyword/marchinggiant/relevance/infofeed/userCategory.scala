@@ -87,6 +87,8 @@ object userCategory {
 
     val threshold = args("input_threshold").toInt
 
+    val cateThread = spark.sparkContext.broadcast(args("CateThread").toDouble)
+
     val userFilter = matrix.map { m =>
       m.imei1Md5 -> 1
     }.rdd
@@ -113,7 +115,7 @@ object userCategory {
                 mmm -> value
               }
               sss
-            }.filter(f => f._1 != "0")
+            }.filter(f => f._1 != "0"&&f._2>cateThread.value)
             .groupBy(_._1)
             .map { m =>
               val cate = m._1
@@ -152,7 +154,7 @@ object userCategory {
               val value = mm.split(":")(1).toDouble
               key -> value
 
-            }.filter(f => f._1 != "0")
+            }.filter(f => f._1 != "0"&&f._2 > cateThread.value)
             .groupBy(_._1)
             .map { m =>
               val cate = m._1

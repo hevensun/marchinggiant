@@ -71,43 +71,68 @@ object UserAppCategorySimilaly {
     adAppGoole
   }
 
+  def cmpJecardDis(catSeq: Seq[Term], adInfoMap: Map[String, Seq[Set[String]]], tpc: Int): Seq[cosResult1] = {
+    val userGooList = catSeq.map { mm =>
+      mm.cate
+    }.toSet
+
+    val adAppGoole = adInfoMap.map { app =>
+      val appId = app._1
+      val adCate = app._2(tpc)
+      val intersectNum = userGooList.intersect(adCate).size.toDouble
+      val unionNum = userGooList.union(adCate).size.toDouble
+      val distance = intersectNum/unionNum + 1.0
+      cosResult1(appId, distance)
+    }.filter(f => f.cosSim > 0.0).toSeq
+      .sortBy(s => -s.cosSim)
+    adAppGoole
+  }
+
   def execute(args: Args, sparkConf: SparkConf) = {
     val spark = SparkSession.builder().config(sparkConf).getOrCreate()
     import spark.implicits._
 
     val app = spark.read.parquet(args("input2"))
       .as[adResult]
-      .map { m =>
-        val sumG = m.gCatSeq.map { item =>
-          item.score * item.score
-        }.sum
-
+      // 转换为 cate 集合, 计算 A交B 和 A 并 B
+      .map{m =>
         val appId = m.appId
-        val google = m.gCatSeq.map { mm =>
-          val normalScore = mm.score / sqrt(sumG)
-          mm.appId + "\t" + normalScore.toString
-        }
-
-        val sumE = m.emiCatSeq.map { item =>
-          item.score * item.score
-        }.sum
-
-        val emi = m.emiCatSeq.map { mmm =>
-          val normalScore = mmm.score / sqrt(sumE)
-          mmm.appId + "\t" + normalScore.toString
-        }
-
-        val sumL = m.topicSeq.map { item =>
-          item.score * item.score
-        }.sum
-
-        val lda = m.topicSeq.map { mm =>
-          val normalScore = mm.score / sqrt(sumL)
-          mm.appId + "\t" + normalScore.toString
-        }
-
-        appId -> Seq(google, emi, lda)
+        val google = m.gCatSeq.map(r=>r.appId).toSet
+        val emiCate = m.emiCatSeq.map(r=>r.appId).toSet
+        val ldaTopic = m.topicSeq.map(r=>r.appId).toSet
+        appId -> Seq(google, emiCate, ldaTopic)
       }.collect().toMap
+//      .map { m =>
+//        val sumG = m.gCatSeq.map { item =>
+//          item.score * item.score
+//        }.sum
+//
+//        val appId = m.appId
+//        val google = m.gCatSeq.map { mm =>
+//          val normalScore = mm.score / sqrt(sumG)
+//          mm.appId + "\t" + normalScore.toString
+//        }
+//
+//        val sumE = m.emiCatSeq.map { item =>
+//          item.score * item.score
+//        }.sum
+//
+//        val emi = m.emiCatSeq.map { mmm =>
+//          val normalScore = mmm.score / sqrt(sumE)
+//          mmm.appId + "\t" + normalScore.toString
+//        }
+//
+//        val sumL = m.topicSeq.map { item =>
+//          item.score * item.score
+//        }.sum
+//
+//        val lda = m.topicSeq.map { mm =>
+//          val normalScore = mm.score / sqrt(sumL)
+//          mm.appId + "\t" + normalScore.toString
+//        }
+//
+//        appId -> Seq(google, emi, lda)
+//      }.collect().toMap
 
     val appAndCateB = spark.sparkContext.broadcast(app)
     println("step one finished")
@@ -116,13 +141,20 @@ object UserAppCategorySimilaly {
       .repartition(5000)
       .filter(f => f.gCatSeq.size < 500&&f.appGoogleCatSeq.size < 500)
       .map { m =>
-        val Goole = cmpCosin(m.gCatSeq, appAndCateB.value, 0)
-        val Emi = cmpCosin(m.emiCatSeq, appAndCateB.value, 1)
-        val Lda = cmpCosin(m.topicSeq, appAndCateB.value, 2)
+//        val Goole = cmpCosin(m.gCatSeq, appAndCateB.value, 0)
+//        val Emi = cmpCosin(m.emiCatSeq, appAndCateB.value, 1)
+//        val Lda = cmpCosin(m.topicSeq, appAndCateB.value, 2)
+//
+//        val appGoogle = cmpCosin(m.appGoogleCatSeq, appAndCateB.value, 0)
+//        val appEmi = cmpCosin(m.appEmiCatSeq, appAndCateB.value, 1)
+//        val appLda = cmpCosin(m.appTopicSeq, appAndCateB.value, 2)
+        val Goole = cmpJecardDis(m.gCatSeq, appAndCateB.value, 0)
+        val Emi = cmpJecardDis(m.emiCatSeq, appAndCateB.value, 1)
+        val Lda = cmpJecardDis(m.topicSeq, appAndCateB.value, 2)
 
-        val appGoogle = cmpCosin(m.appGoogleCatSeq, appAndCateB.value, 0)
-        val appEmi = cmpCosin(m.appEmiCatSeq, appAndCateB.value, 1)
-        val appLda = cmpCosin(m.appTopicSeq, appAndCateB.value, 2)
+        val appGoogle = cmpJecardDis(m.appGoogleCatSeq, appAndCateB.value, 0)
+        val appEmi = cmpJecardDis(m.appEmiCatSeq, appAndCateB.value, 1)
+        val appLda = cmpJecardDis(m.appTopicSeq, appAndCateB.value, 2)
 
         cosResult3WithApp(m.imei1Md5, Goole, Emi, Lda, appGoogle, appEmi, appLda)
       }

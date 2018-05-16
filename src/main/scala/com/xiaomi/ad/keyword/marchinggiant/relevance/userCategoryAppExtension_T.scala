@@ -86,7 +86,7 @@ object userCategoryAppExtension_T {
   }
 
   // get google category and extend those category
-  def getGoogleCateSeq(data: BehaviorTag, cateExtendB: Map[String, Seq[String]]): Seq[String] = {
+  def getGoogleCateSeq(data: BehaviorTag, cateExtendB: Map[String, Seq[String]], thread: Double): Seq[String] = {
     val ss = data.extension.getOrElse("2", "0:0").split(" ")
       .flatMap { mm =>
         val term = mm.split(":")
@@ -97,7 +97,7 @@ object userCategoryAppExtension_T {
           (mmm, value)
         }
         sss
-      }.filter(f => f._1 != "0")
+      }.filter(f => f._1 != "0"&&f._2>thread)
       .groupBy(_._1)
       .map { m =>
         val cate = m._1
@@ -111,7 +111,7 @@ object userCategoryAppExtension_T {
   }
 
   // get emi category or topic
-  def getEmiOrTopic(splitC: String, data: BehaviorTag): Seq[String] = {
+  def getEmiOrTopic(splitC: String, data: BehaviorTag, thread: Double): Seq[String] = {
     val ss = data.extension.getOrElse(splitC, "0:0").split(" ")
       .map { mm =>
         val term = mm.split(":")
@@ -119,7 +119,7 @@ object userCategoryAppExtension_T {
         val value = term(1).toDouble
         key -> value
 
-      }.filter(f => f._1 != "0")
+      }.filter(f => f._1 != "0"&&f._2>thread)
       .groupBy(_._1)
       .map { m =>
         val cate = m._1
@@ -134,7 +134,7 @@ object userCategoryAppExtension_T {
   }
 
   // get app eim category or topic
-  def getAppCateOrTopic(data: BehaviorTag, packageMap: Map[String, Seq[(String, Double)]], appIdMap: Map[String, Seq[(String, Double)]]): Seq[String] = {
+  def getAppCateOrTopic(data: BehaviorTag, packageMap: Map[String, Seq[(String, Double)]], appIdMap: Map[String, Seq[(String, Double)]], thread: Double): Seq[String] = {
     val sourceId = data.sourceId
     val actionId = data.actionId
     val re1 = if (sourceId == 3) {
@@ -146,7 +146,7 @@ object userCategoryAppExtension_T {
       if (appIdMap.contains(appid)) appIdMap.get(appid).get else Seq()
     }
     else Seq()
-    re1.map{r=>
+    re1.filter(_._2>thread).map{r=>
       r._1+":"+r._2.toString
     }
   }
@@ -168,7 +168,7 @@ object userCategoryAppExtension_T {
   }
 
   // get app category's extension categories
-  def getAppCateExtension(data: BehaviorTag, packageMap: Map[String, Seq[(String, Double)]], appIdMap: Map[String, Seq[(String, Double)]], cateExtendB: Map[String, Seq[String]]): Seq[String] ={
+  def getAppCateExtension(data: BehaviorTag, packageMap: Map[String, Seq[(String, Double)]], appIdMap: Map[String, Seq[(String, Double)]], cateExtendB: Map[String, Seq[String]],thread: Double): Seq[String] ={
     val sourceId = data.sourceId
     val actionId = data.actionId
     val re1 = if(sourceId == 3){
@@ -201,7 +201,7 @@ object userCategoryAppExtension_T {
               (mmm, score)
             }
             sss
-          }.filter(f=>f._1 != "0")
+          }.filter(f=>f._1 != "0"&&f._2>thread)
       }
       else Seq()
     }
@@ -233,14 +233,14 @@ object userCategoryAppExtension_T {
   }
 
   //merge and caculator arg value for same category id or topic
-  def mergeCate(data: Seq[String]): Seq[String] ={
+  def mergeCate(data: Seq[String], thread: Double): Seq[String] ={
     if(data == null||data.isEmpty) Seq()
     else data.map{r=>
       val term = r.split(":")
       val cateId = term(0)
       val score = term(1).toDouble
       (cateId, score)
-    }.groupBy(_._1).map{case(key, value)=>
+    }.filter(_._2>thread).groupBy(_._1).map{case(key, value)=>
       val cateId = key
       val size = value.size
       val score = value.map{a=>a._2}.sum
@@ -423,19 +423,21 @@ object userCategoryAppExtension_T {
     val hashStart = spark.sparkContext.broadcast(args("hashS").toInt)
     val hashRange = spark.sparkContext.broadcast(args("hashKey").toInt)
 
+    val cateThread = spark.sparkContext.broadcast(args("CateThread").toDouble)
+
     val tt = matrix.filter(f => !userFilterB.value.contains(f.imei1Md5))
       .mapPartitions{rows=>
         rows.map{r=>
           val randomNum = hashStart.value + rndBc.value.nextInt(hashRange.value)
           val imei = randomNum.toString + r.imei1Md5
-          val gCate = getGoogleCateSeq(r, cateExtendB.value)
-          val emiCate = getEmiOrTopic("6", r)
-          val ldaTopic = getEmiOrTopic("3", r)
+          val gCate = getGoogleCateSeq(r, cateExtendB.value, cateThread.value)
+          val emiCate = getEmiOrTopic("6", r, cateThread.value)
+          val ldaTopic = getEmiOrTopic("3", r, 0.0)
           val keywords = getKeyWordWeigth(r.text, qtw, gtm)
           // 添加 app google category ;emi category; lda topic; key word
-          val appGcate = getAppCateExtension(r,appCategoryMapPackageBC.value, appCategoryMapAppIdBC.value, cateExtendB.value)
-          val appEmiCate = getAppCateOrTopic(r, appEmiCategoryMapPackageBC.value, appEmiCategoryMapAppIdBC.value)
-          val appLdaTopic = getAppCateOrTopic(r, appLdaTopicMapPackageBC.value, appLdaTopicMapAppIdBC.value)
+          val appGcate = getAppCateExtension(r,appCategoryMapPackageBC.value, appCategoryMapAppIdBC.value, cateExtendB.value, cateThread.value)
+          val appEmiCate = getAppCateOrTopic(r, appEmiCategoryMapPackageBC.value, appEmiCategoryMapAppIdBC.value, cateThread.value)
+          val appLdaTopic = getAppCateOrTopic(r, appLdaTopicMapPackageBC.value, appLdaTopicMapAppIdBC.value, 0.0)
           val appkeywords = getAppKeyWords(r, appKeywordsMapPackageBC.value, appKeywordsMapAppIdBC.value)
           imei->(r.imei1Md5, gCate, emiCate, ldaTopic, keywords, appGcate, appEmiCate, appLdaTopic, appkeywords)
         }
@@ -443,13 +445,13 @@ object userCategoryAppExtension_T {
       .rdd
       .reduceByKey{(x, y)=>
         val imei = x._1
-        val gCate = mergeCate(x._2 ++ y._2)
-        val emiCate = mergeCate(x._3 ++ y._3)
-        val lda = mergeCate(x._4 ++ y._4)
+        val gCate = mergeCate(x._2 ++ y._2, cateThread.value)
+        val emiCate = mergeCate(x._3 ++ y._3, cateThread.value)
+        val lda = mergeCate(x._4 ++ y._4, 0.0)
         val keywords = x._5 ++ y._5
-        val appGCate = mergeCate(x._6 ++ y._6)
-        val appEmiCate = mergeCate(x._7 ++ y._7)
-        val appLda = mergeCate(x._8 ++ y._8)
+        val appGCate = mergeCate(x._6 ++ y._6, cateThread.value)
+        val appEmiCate = mergeCate(x._7 ++ y._7, cateThread.value)
+        val appLda = mergeCate(x._8 ++ y._8, 0.0)
         val appKeywords = x._9 ++ y._9
         (imei, gCate, emiCate, lda, keywords, appGCate, appEmiCate, appLda, appKeywords)
       }
@@ -462,13 +464,13 @@ object userCategoryAppExtension_T {
       }
       .reduceByKey{(x, y)=>
         val imei = x._1
-        val gCate = mergeCate(x._2 ++ y._2)
-        val emiCate = mergeCate(x._3 ++ y._3)
-        val lda = mergeCate(x._4 ++ y._4)
+        val gCate = mergeCate(x._2 ++ y._2, cateThread.value)
+        val emiCate = mergeCate(x._3 ++ y._3, cateThread.value)
+        val lda = mergeCate(x._4 ++ y._4, 0.0)
         val keywords = x._5 ++ y._5
-        val appGCate = mergeCate(x._6 ++ y._6)
-        val appEmiCate = mergeCate(x._7 ++ y._7)
-        val appLda = mergeCate(x._8 ++ y._8)
+        val appGCate = mergeCate(x._6 ++ y._6, cateThread.value)
+        val appEmiCate = mergeCate(x._7 ++ y._7, cateThread.value)
+        val appLda = mergeCate(x._8 ++ y._8, 0.0)
         val appKeywords = x._9 ++ y._9
         (imei, gCate, emiCate, lda, keywords, appGCate, appEmiCate, appLda, appKeywords)
       }.mapPartitions{rows=>

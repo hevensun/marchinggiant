@@ -48,7 +48,7 @@ object adInfoCategory {
   def main(args: Array[String]): Unit = {
     val argv = Args(args)
     val sparkConf = new SparkConf()
-    sparkConf.setMaster("local")
+//    sparkConf.setMaster("local")
     execute(argv, sparkConf)
   }
 
@@ -72,6 +72,8 @@ object adInfoCategory {
       .toMap
 
     val cateExtendB = spark.sparkContext.broadcast(cateExtend)
+
+    val cateThread = spark.sparkContext.broadcast(args("CateThread").toDouble)
 
     val appAndCate = spark.read.parquet(args("input_adinfo"))
       .select($"adId", $"appInfo", $"levelClassifies", $"emiClassifies", $"adTopicInfo")
@@ -112,7 +114,7 @@ object adInfoCategory {
           ss
         }
         cate
-      }.toSeq.filter(f => f.score != 0)
+      }.toSeq.filter(f => f.score > cateThread.value)
         .groupBy(b => b.cateId)
         .map { m =>
           val cate = m._1
@@ -130,7 +132,7 @@ object adInfoCategory {
         .flatMap { terms =>
           val emiCategory = terms._2.emiCategory
           emiCategory
-        }.toSeq
+        }.toSeq.filter(f=>f.score > cateThread.value)
         .groupBy(_.catName)
         .map { r =>
           val emiCateName = r._1
