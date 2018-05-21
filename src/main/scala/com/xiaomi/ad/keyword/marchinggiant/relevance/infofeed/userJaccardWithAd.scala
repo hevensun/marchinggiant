@@ -1,19 +1,12 @@
 package com.xiaomi.ad.keyword.marchinggiant.relevance.infofeed
 
-/**
-  * create by liguoyu 2018-04-20
-  * 处理user category 向量和 ad info 中的appid 的category 向量
-  * 输入是 userCategoryOptimize 处理得到的user category 向量, adInfoCategory 处理得到的ad app category 向量
-  * 计算google category , emi category , lda topic 等向量的cos 值
-  * 输出结果
-  */
+import com.twitter.scalding.Args
+import org.apache.spark.SparkConf
+import org.apache.spark.sql.{SaveMode, SparkSession}
 
 import scala.math.sqrt
-import com.twitter.scalding.Args
-import org.apache.spark.sql.{SaveMode, SparkSession}
-import org.apache.spark.{SparkConf, SparkContext}
 
-object userSimilalyWithAd {
+object userJaccardWithAd {
   case class cosResult1(appId: String, cosSim: Double)
 
   case class cosResult3(imei:String, cosSimG:Seq[cosResult1], cosSimE:Seq[cosResult1], cosSimL:Seq[cosResult1])
@@ -72,7 +65,7 @@ object userSimilalyWithAd {
       val adCate = app._2(tpc).toSet
       val intersectNum = userGooList.intersect(adCate).size.toDouble
       val unionNum = userGooList.union(adCate).size.toDouble
-      val distance = intersectNum/unionNum + 1.0
+      val distance = intersectNum/unionNum
       cosResult1(appId, distance)
     }.filter(f => f.cosSim > 0.0).toSeq
       .sortBy(s => -s.cosSim)
@@ -82,40 +75,18 @@ object userSimilalyWithAd {
   def execute(args: Args, sparkConf: SparkConf) = {
     val spark = SparkSession.builder().config(sparkConf).getOrCreate()
     import spark.implicits._
+    //    // 转换为 cate 集合, 计算 A交B 和 A 并 B
 
     val app = spark.read.parquet(args("input2"))
       .as[adResult]
-      .map { m =>
-        val sumG = m.gCatSeq.map { item =>
-          item.score * item.score
-        }.sum
-
+      .map{m =>
         val appId = m.appId
-        val google = m.gCatSeq.map { mm =>
-          val normalScore = mm.score / sqrt(sumG)
-          mm.cateId + "\t" + normalScore.toString
-        }
-
-        val sumE = m.emiCatSeq.map { item =>
-          item.score * item.score
-        }.sum
-
-        val emi = m.emiCatSeq.map { mmm =>
-          val normalScore = mmm.score / sqrt(sumE)
-          mmm.cateId + "\t" + normalScore.toString
-        }
-
-        val sumL = m.topicSeq.map { item =>
-          item.score * item.score
-        }.sum
-
-        val lda = m.topicSeq.map { mm =>
-          val normalScore = mm.score / sqrt(sumL)
-          mm.cateId + "\t" + normalScore.toString
-        }
-
-        appId -> Seq(google, emi, lda)
+        val google = m.gCatSeq.map(r=>r.cateId)
+        val emiCate = m.emiCatSeq.map(r=>r.cateId)
+        val ldaTopic = m.topicSeq.map(r=>r.cateId)
+        appId -> Seq(google, emiCate, ldaTopic)
       }.collect().toMap
+
 
     val appAndCateB = spark.sparkContext.broadcast(app)
 
@@ -124,9 +95,9 @@ object userSimilalyWithAd {
       .repartition(1000)
       .filter(f => f.gCatSeq.size < 500)
       .map{ m =>
-        val adAppGoole = cmpCosin(m.gCatSeq, appAndCateB.value, 0)
-        val adAppEmi = cmpCosin(m.emiCatSeq, appAndCateB.value, 1)
-        val adAppLda = cmpCosin(m.topicSeq, appAndCateB.value, 2)
+        val adAppGoole = cmpJecardDis(m.gCatSeq, appAndCateB.value, 0)
+        val adAppEmi = cmpJecardDis(m.emiCatSeq, appAndCateB.value, 1)
+        val adAppLda = cmpJecardDis(m.topicSeq, appAndCateB.value, 2)
 
         cosResult3(m.imei1Md5, adAppGoole, adAppEmi, adAppLda)
       }.repartition(200)

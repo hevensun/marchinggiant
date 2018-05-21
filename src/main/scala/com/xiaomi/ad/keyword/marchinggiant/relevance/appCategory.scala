@@ -24,7 +24,7 @@ object appCategory {
 
     case class EmiCategory(name: String, score: Double)
 
-    case class adResult(appId: String, gCatSeq: Seq[googleCategory], emiCatSeq: Seq[help], topicSeq: Seq[help])
+    case class adResult(appId: String, gCatSeq: Seq[help], emiCatSeq: Seq[help], topicSeq: Seq[help])
 
     case class LDATopic(topicId: Int, topicName: String, score: Double)
 
@@ -105,7 +105,7 @@ object appCategory {
                         val score = m._2.map { mm =>
                             mm._2
                         }.sum
-                        googleCategory(cate, score / size)
+                        help(cate, score / size)
                     }.toSeq
                 val emi = m.emiCategory.map { e =>
                     help(e.name, e.score)

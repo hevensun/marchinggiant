@@ -17,12 +17,12 @@ object staticResultAdinfoUserSim {
     val spark = SparkSession.builder().config(spark_conf).getOrCreate()
     import spark.implicits._
 
-    val appInfoPath = input_p("appInfoPath")//"/user/h_miui_ad/develop/liguoyu1/adinfoSimInput/appAdInfoCate_"+input_p("yestoday")
-    val userPath = input_p("userPath") //"/user/h_miui_ad/develop/liguoyu1/cosSimilarity/userCateInfo_"+input_p("yestoday")
-    val resultPath = input_p("resultPath") //"/user/h_miui_ad/develop/liguoyu1/project/matrix/data/relevance/infofeed/re_sim_user2appid_"+input_p("yestoday")
-    val appCount = spark.read.parquet(appInfoPath).count()//getOrElse(0)
-    val userCount = spark.read.parquet(userPath).count()//).getOrElse(0)
-    val resultCount = spark.sparkContext.textFile(resultPath).count()//).getOrElse(0)
+    val appInfoPath = input_p("appInfoPath")
+    val userPath = input_p("userPath")
+    val resultPath = input_p("resultPath")
+    val appCount = spark.read.parquet(appInfoPath).count()
+    val userCount = spark.read.parquet(userPath).count()
+    val resultCount = spark.sparkContext.textFile(resultPath).count()
     if(appCount.toInt <= 0||userCount.toLong <= 10000L||resultCount.toLong <= 10000L){
       val write_result = spark.sparkContext.makeRDD("生成结果有错误，请查阅日志！！！")
       write_result.saveAsTextFile(input_p("output"))
