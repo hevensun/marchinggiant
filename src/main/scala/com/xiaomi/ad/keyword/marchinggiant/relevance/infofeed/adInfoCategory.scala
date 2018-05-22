@@ -81,16 +81,17 @@ object adInfoCategory {
       .map { m =>
         val adId = m.adId
         val appId = m.appinfo.appId
-        // 判断是否为空
+        // 判断是否为空 google
         val keywordsC = if(m.appinfo.keywordsClassifies==null) Seq() else m.appinfo.keywordsClassifies
         val levelC = if(m.appinfo.levelClassifies==null) Seq() else m.appinfo.levelClassifies
         val adlevelC = if(m.levelClassifies==null) Seq() else m.levelClassifies
         val adWithAppCategoryG = keywordsC ++ levelC ++ adlevelC
 
-        // 判断是否为空
+        // 判断是否为空 lda topic
         val keywordsT = if(m.appinfo.keywordsTopicInfo==null) Seq() else m.appinfo.keywordsTopicInfo
         val adT = if(m.adTopicInfo==null) Seq() else m.adTopicInfo
         val adWithAppLdaTopic = adT ++ keywordsT
+        //  emi category
         val emiCategory = if(m.emiClassifies == null) Seq() else m.emiClassifies
         (appId, adWithAppTerm(adId, appId, adWithAppCategoryG, emiCategory, adWithAppLdaTopic))
       }.groupByKey(_._1)

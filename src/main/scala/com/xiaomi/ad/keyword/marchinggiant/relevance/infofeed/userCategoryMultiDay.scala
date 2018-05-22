@@ -1,10 +1,7 @@
 package com.xiaomi.ad.keyword.marchinggiant.relevance.infofeed
 
 /**
-  * Create by liguoyu 2018-05-02
-  * 输入  user category 向量 和 adinfo app category 向量
-  * 计算 对以上二者计算 cos 距离
-  * 输出 user 和 adinfo app 的相似度
+  * create by liguoyu on 2018-05-22
   */
 
 import com.twitter.scalding.Args
@@ -13,8 +10,7 @@ import org.apache.spark.SparkConf
 import org.apache.spark.sql.{SaveMode, SparkSession}
 import collection.JavaConverters._
 
-
-object userCategoryOptimize {
+object userCategoryMultiDay {
   case class Term(cate: String, score: Double)
 
   case class newBehaviorTag(
@@ -186,10 +182,17 @@ object userCategoryOptimize {
 
     val appSetB = spark.sparkContext.broadcast(appSet)
 
-    val matrix = spark.read.parquet(args("input_matrix"))
+    val matrixfir = spark.read.parquet(args("input_matrix"))
       .as[BehaviorTag]
-      .filter(f => (f.sourceId == 1&&f.sourceId== 2) && !appSetB.value.contains(f.entityKey))
+      .filter(f => f.sourceId == 1 && !appSetB.value.contains(f.entityKey))
+    val matrixsec = spark.read.parquet(args("input_matrix2"))
+      .as[BehaviorTag]
+      .filter(f=>f.sourceId == 1&& !appSetB.value.contains(f.entityKey))
+    val matrixthird = spark.read.parquet(args("input_matrix3"))
+      .as[BehaviorTag]
+      .filter(f=>f.sourceId == 1&& !appSetB.value.contains(f.entityKey))
 
+    val matrix = matrixfir.union(matrixsec).union(matrixthird)
     matrix.persist()
 
     val threshold = args("input_threshold").toInt
@@ -270,4 +273,5 @@ object userCategoryOptimize {
     spark.stop()
     println("Task finished")
   }
+
 }

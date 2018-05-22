@@ -1,20 +1,17 @@
 package com.xiaomi.ad.keyword.marchinggiant.relevance.infofeed
 
-/**
-  * Create by liguoyu 2018-05-02
-  * 输入  user category 向量 和 adinfo app category 向量
-  * 计算 对以上二者计算 cos 距离
-  * 输出 user 和 adinfo app 的相似度
-  */
-
 import com.twitter.scalding.Args
 import com.xiaomi.ad.qu.get_query_term_weight.usage.{getTermImp, getTermWeight}
 import org.apache.spark.SparkConf
 import org.apache.spark.sql.{SaveMode, SparkSession}
 import collection.JavaConverters._
 
+/**
+  * create by liguoyu on 2018-05-21
+  * query keyword filter
+  */
 
-object userCategoryOptimize {
+object userCategoryQuery {
   case class Term(cate: String, score: Double)
 
   case class newBehaviorTag(
@@ -41,7 +38,7 @@ object userCategoryOptimize {
                         )
 
   case class Result(
-                     imei1Md5: String, gCatSeq: Seq[Term],  topicSeq: Seq[Term], emiCatSeq: Seq[Term], kwSeq:Seq[Term]
+                     imei1Md5: String, kwSeq:Seq[Term]
                    )
   def main(args: Array[String]): Unit = {
     val argv = Args(args)
@@ -151,7 +148,7 @@ object userCategoryOptimize {
       val nterm1 = term1.filter(f => f.cate != "###").toList
       val nterm2 = term2.filter(f => f.cate != "###").toList
       val term = nterm1 ++ nterm2
-      term
+      term.sortBy(-_.score).take(2)
     }
   }
 
@@ -188,7 +185,7 @@ object userCategoryOptimize {
 
     val matrix = spark.read.parquet(args("input_matrix"))
       .as[BehaviorTag]
-      .filter(f => (f.sourceId == 1&&f.sourceId== 2) && !appSetB.value.contains(f.entityKey))
+      .filter(f => (f.sourceId == 1 || f.sourceId == 2) && !appSetB.value.contains(f.entityKey))
 
     matrix.persist()
 
@@ -219,23 +216,17 @@ object userCategoryOptimize {
         rows.map{r=>
           val randomNum = hashStart.value + rndBc.value.nextInt(hashRange.value)
           val imei = randomNum.toString + r.imei1Md5
-          val gCate = getGoogleCateSeq(r, cateExtendB.value, cateThread.value)
-          val emiCate = getEmiOrTopic("6", r, cateThread.value)
-          val ldaTopic = getEmiOrTopic("3", r, 0.0)
           val keywords = getKeyWordWeigth(r.text, qtw, gtm)
           // 添加 app google category ;emi category; lda topic; key word
-          imei->(r.imei1Md5, gCate, emiCate, ldaTopic, keywords)
+          imei->(r.imei1Md5, keywords)
         }
       }
       .rdd
       .reduceByKey{(x, y)=>
         val imei = x._1
-        val gCate = mergeCate(x._2 ++ y._2)
-        val emiCate = mergeCate(x._3 ++ y._3)
-        val lda = mergeCate(x._4 ++ y._4)
-        val keywords = x._5 ++ y._5
+        val keywords = x._2 ++ y._2
 
-        (imei, gCate, emiCate, lda, keywords)
+        (imei, keywords)
       }
       .mapPartitions{rows=>
         rows.map{r=>
@@ -246,20 +237,14 @@ object userCategoryOptimize {
       }
       .reduceByKey{(x, y)=>
         val imei = x._1
-        val gCate = mergeCate(x._2 ++ y._2)
-        val emiCate = mergeCate(x._3 ++ y._3)
-        val lda = mergeCate(x._4 ++ y._4)
-        val keywords = x._5 ++ y._5
-        (imei, gCate, emiCate, lda, keywords)
+        val keywords = x._2 ++ y._2
+        (imei, keywords)
       }.mapPartitions{rows=>
       rows.map{r=>
         val imei = r._1
         val x = r._2
-        val gCate = getTerm(x._2)
-        val emiCate = getTerm(x._3)
-        val lda = getTerm(x._4)
-        val keywords = x._5
-        Result(imei, gCate, lda, emiCate, keywords)
+        val keywords = x._2
+        Result(imei, keywords)
       }
     }.toDS().as[Result]
 
