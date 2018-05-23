@@ -31,7 +31,7 @@ object adinfoKeywords {
                       introduction: String,
                       brief: String
                     )
-  case class adInfoTerm(adId: Long, appinfo: AppInfo, levelClassifies:Seq[Category], emiClassifies: Seq[EmiCategory], adTopicInfo:Seq[LDATopic])
+  case class adInfoTerm(adId: Long, appinfo: AppInfo)
   case class adWithAppTerm(adId: Long, appId: Long, app_keywords: Seq[String])
 
   case class KeyWords(appId: Long, keyWords: Seq[String])
@@ -84,7 +84,7 @@ object adinfoKeywords {
       KeyWords(appId, keywords)
     }
 
-    ad_keywords.as[adResult]
+    ad_keywords.as[KeyWords]
       .repartition(1)
       .write
       .mode(SaveMode.Overwrite)
