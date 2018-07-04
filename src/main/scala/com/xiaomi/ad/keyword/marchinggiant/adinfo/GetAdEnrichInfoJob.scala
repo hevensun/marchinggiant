@@ -29,6 +29,25 @@ object  GetAdEnrichInfoJob {
 
     case class help(appId: String, score: Double)
 
+    def fetchFirstCate(cateList: Seq[Category]): String = {
+        val result = cateList.map{  t =>
+            t.catName.split("/").head
+        }.filter(_.nonEmpty)
+        if (result.nonEmpty) result.head else "NULL"
+    }
+
+    def fetchSecondCate(cateList: Seq[Category]): String = {
+        val result = cateList.map{  t =>
+            val itemList = t.catName.split("/")
+            if(itemList.size > 1){
+                itemList(0) + ":" + itemList(1)
+            }else{
+                ""
+            }
+        }.filter(_.nonEmpty)
+        if (result.nonEmpty) result.head else "NULL"
+    }
+
     def execute(args: Args, sparkConf: SparkConf) = {
         val spark = SparkSession.builder().config(sparkConf).getOrCreate()
         import spark.implicits._
@@ -61,6 +80,33 @@ object  GetAdEnrichInfoJob {
         val adAppIdsB = spark.sparkContext.broadcast(adAppIds)
         val appUdf = udf { a: String => adAppIdsB.value.contains(a.toString)}
 
+
+        val appAndCate1 = spark.read.parquet(args("input_app"))
+            .select($"appId", $"packageName",$"category", $"emiCategory", $"lda",$"level1CategoryName",$"level2CategoryName")
+            .as[Term]
+            .map { m =>
+                val appId = m.appId.toString
+                val pkgname = m.packageName
+                val l1name = m.level1CategoryName
+                val l2name = m.level2CategoryName
+
+                val googleCategoryStr = m.category.map{ t => t.catId+":"+t.catName + ":" + t.score.toString}.mkString("#")
+                val firstCate = fetchFirstCate(m.category)
+                val secondCate = fetchSecondCate(m.category)
+                val emiStr = m.emiCategory.map { e =>
+                    e.name + ":" + e.score.toString
+                }.mkString("#")
+                val lda = m.lda.map { l =>
+                    l.topicId + ":" + l.score.toString
+                }.mkString("#")
+
+                s"$appId\t$pkgname\t$firstCate\t$secondCate\t$googleCategoryStr\t$emiStr\t$lda\t$l1name\t$l2name"
+            }
+            .repartition(1)
+            .write
+            .mode(SaveMode.Overwrite)
+            .text(args("output_all"))
+
         val appAndCate = spark.read.parquet(args("input_app"))
             .filter(appUdf($"appId"))
             .select($"appId", $"packageName",$"category", $"emiCategory", $"lda",$"level1CategoryName",$"level2CategoryName")
@@ -72,6 +118,8 @@ object  GetAdEnrichInfoJob {
                 val l2name = m.level2CategoryName
 
                 val googleCategoryStr = m.category.map{ t => t.catId+":"+t.catName + ":" + t.score.toString}.mkString("#")
+                val firstCate = fetchFirstCate(m.category)
+                val secondCate = fetchSecondCate(m.category)
                 val emiStr = m.emiCategory.map { e =>
                     e.name + ":" + e.score.toString
                 }.mkString("#")
@@ -79,7 +127,7 @@ object  GetAdEnrichInfoJob {
                     l.topicId + ":" + l.score.toString
                 }.mkString("#")
 
-                s"$appId\t$pkgname\t$googleCategoryStr\t$emiStr\t$lda\t$l1name\t$l2name"
+                s"$appId\t$pkgname\t$firstCate\t$secondCate\t$googleCategoryStr\t$emiStr\t$lda\t$l1name\t$l2name"
             }
             .repartition(1)
             .write

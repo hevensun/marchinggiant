@@ -96,8 +96,8 @@ object userCategory {
       .sortBy(s => s._2, false)
       .filter(f => f._2 > threshold)
       .map{ m =>
-        m._1
-      }.collect().toSeq
+        m._1 -> 1
+      }.collect().toMap
 
     val userFilterB = spark.sparkContext.broadcast(userFilter)
 

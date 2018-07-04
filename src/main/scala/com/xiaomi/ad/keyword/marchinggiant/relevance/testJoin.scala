@@ -50,7 +50,7 @@ object testJoin {
         
         val user = spark.read.parquet(args("input1"))
             .as[userResult]
-            .repartition(500)
+            .repartition(1000)
             .filter(f => f.gCatSeq.size < 500)
             .map{ m =>
                 val userGooList = m.gCatSeq.map { mm =>
