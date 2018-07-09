@@ -32,7 +32,7 @@ object GetAdIdInfo {
     case class AssetInfo(
                             titles:Seq[String],
                             imgUrls:Seq[String],
-                            level:Int,
+                            level:Integer,
                             titlesClassifies:Seq[Category],
                             assetId:Long
                         )
@@ -156,7 +156,7 @@ object GetAdIdInfo {
       .repartition(1)
       .write
       .mode(SaveMode.Overwrite)
-      .text(args("output"))
+          .text(args("output"))
 
     spark.stop()
   }
