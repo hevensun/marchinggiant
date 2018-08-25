@@ -30,7 +30,7 @@ object BaiduInputStatistics {
             .as[BehaviorTag]
             .filter(_.sourceId == 4)
             .flatMap { bt =>
-                ToAnalysis.parseAndRmStopWords(bt.text)
+                ToAnalysis.parse(bt.text)
                     .getTerms
                     .filter { term =>
                         term.getNatureStr != "null" && (term.getNatureStr.startsWith("n") || term.getNatureStr.startsWith("v"))
