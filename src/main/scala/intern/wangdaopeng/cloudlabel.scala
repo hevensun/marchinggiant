@@ -91,8 +91,7 @@ object cloudlabel {
 
 
     //appusedaily
-    val file1 = "/user/h_data_platform/platform/matrix/matrix_app_usage_daily/date=20180821/part-00196-92435610-59e4-4a10-9a43-828270fc31c2.snappy.parquet"
-    val file2 = "/user/h_data_platform/platform/matrix/matrix_app_usage_daily/date=20180820/part-00099-bcea8303-a831-4a6d-b3f8-3b77715dbb73.snappy.parquet"
+
     import spark.implicits._
     val userinfo  =spark.read.parquet(args("userinfo"))
       .map{x=>
