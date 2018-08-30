@@ -59,9 +59,7 @@ object cloudlabel {
     else  return word
   }
 
-  //  def cutword(word:String): String ={
-  //           return word
-  //  }
+
 
 
   def main(args: Array[String]): Unit = {
